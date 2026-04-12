@@ -71,13 +71,14 @@ async function saveRawSnapshots(products) {
   // 헤더 확인
   await ensureHeaders(sheets, 'raw_snapshots', RAW_HEADERS);
 
-  // 오늘 날짜 중복 확인
+  // 오늘 날짜 + 카테고리 중복 확인
   const existing = await readSheet(sheets, 'raw_snapshots');
-  const today = products[0]?.snapshot_date;
-  const alreadyExists = existing.slice(1).some(row => row[0] === today);
+  const today    = products[0]?.snapshot_date;
+  const category = products[0]?.category;
+  const alreadyExists = existing.slice(1).some(row => row[0] === today && row[3] === category);
 
   if (alreadyExists) {
-    console.log(`  ⚠️  ${today} 데이터가 이미 있어요. 중복 저장 건너뜀.`);
+    console.log(`  ⚠️  ${today} [${category}] 데이터가 이미 있어요. 중복 저장 건너뜀.`);
     return false;
   }
 

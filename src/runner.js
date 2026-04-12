@@ -1,4 +1,5 @@
-const { scrape }                                 = require('./scraper');
+const { scrapeAll }                              = require('./scraper');
+const { CATEGORIES }                             = require('./categories');
 const { saveRawSnapshots, saveDailyChanges,
         saveBrandEntries, readSheet, getSheets }  = require('./sheets');
 const { analyze }                                = require('./analyzer');
@@ -31,41 +32,50 @@ async function run() {
 
   try {
     // 1. 수집 (실패 시 3회 재시도)
-    const products = await withRetry(() => scrape(), '수집');
+    const products = await withRetry(() => scrapeAll(CATEGORIES), '수집');
 
     // 2. product_key 붙이기
     products.forEach(p => {
       p.product_key = makeProductKey(p.brand_name_raw, p.product_name_raw);
     });
 
-    // 3. raw_snapshots 저장
-    await withRetry(() => saveRawSnapshots(products), 'raw_snapshots 저장');
-
-    // 4. 전체 데이터 읽기
+    // 3. 카테고리별로 저장 + 분석
     const sheets  = await getSheets();
-    const allRows = await readSheet(sheets, 'raw_snapshots');
+    const allDailyChanges = [];
+    const allBrandEntries = [];
 
-    // 5. 변동 분석
-    log.info('[분석] 전일 대비 변동 계산 중...');
-    const { dailyChanges, brandEntries } = analyze(allRows, products);
+    for (const category of CATEGORIES) {
+      const catProducts = products.filter(p => p.category === category.name);
+      if (catProducts.length === 0) continue;
 
-    const risers  = dailyChanges.filter(c => c.rank_change > 0).length;
-    const fallers = dailyChanges.filter(c => c.rank_change < 0).length;
-    const priceUp = dailyChanges.filter(c => c.price_change > 0).length;
-    const priceDn = dailyChanges.filter(c => c.price_change < 0).length;
-    const newOnes = dailyChanges.filter(c => c.is_new_entry).length;
-    log.info(`  순위 상승: ${risers}개 | 하락: ${fallers}개`);
-    log.info(`  가격 인상: ${priceUp}개 | 인하: ${priceDn}개`);
-    log.info(`  신규 진입: ${newOnes}개`);
+      log.info(`\n[${category.label}] 처리 중...`);
+
+      // raw_snapshots 저장
+      await withRetry(() => saveRawSnapshots(catProducts), `${category.label} raw_snapshots 저장`);
+
+      // 전체 데이터 읽기 (카테고리 필터링)
+      const allRows   = await readSheet(sheets, 'raw_snapshots');
+      const catRows   = [allRows[0], ...allRows.slice(1).filter(r => r[3] === category.name)];
+
+      // 변동 분석
+      const { dailyChanges, brandEntries } = analyze(catRows, catProducts);
+      allDailyChanges.push(...dailyChanges);
+      allBrandEntries.push(...brandEntries);
+
+      const risers = dailyChanges.filter(c => c.rank_change > 0).length;
+      const fallers = dailyChanges.filter(c => c.rank_change < 0).length;
+      const newOnes = dailyChanges.filter(c => c.is_new_entry).length;
+      log.info(`  순위 상승: ${risers}개 | 하락: ${fallers}개 | 신규: ${newOnes}개`);
+    }
 
     // 6. daily_changes 저장
-    await withRetry(() => saveDailyChanges(dailyChanges), 'daily_changes 저장');
+    await withRetry(() => saveDailyChanges(allDailyChanges), 'daily_changes 저장');
 
     // 7. brand_entries 저장
-    await withRetry(() => saveBrandEntries(brandEntries), 'brand_entries 저장');
+    await withRetry(() => saveBrandEntries(allBrandEntries), 'brand_entries 저장');
 
     // 8. dashboard 갱신
-    await withRetry(() => updateDashboard(products, dailyChanges), 'dashboard 갱신');
+    await withRetry(() => updateDashboard(products, allDailyChanges), 'dashboard 갱신');
 
     // 9. HTML 대시보드 생성
     await withRetry(() => generateReport(), 'HTML 대시보드 생성');
