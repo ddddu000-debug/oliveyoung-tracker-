@@ -1,0 +1,54 @@
+name: 올리브영 랭킹 일일 수집
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # 매일 오전 9시 (한국시간 = UTC 00:00)
+  workflow_dispatch:        # 버튼 클릭으로 수동 실행도 가능
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 코드 가져오기
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      # 2. Node.js 설치
+      - name: Node.js 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3. 패키지 설치
+      - name: 패키지 설치
+        run: npm install
+
+      # 4. Playwright 브라우저 설치
+      - name: Playwright 브라우저 설치
+        run: npx playwright install chromium --with-deps
+
+      # 5. 환경 변수 파일 생성
+      - name: .env 파일 생성
+        run: |
+          echo "SPREADSHEET_ID=${{ secrets.SPREADSHEET_ID }}" >> .env
+          echo "GOOGLE_CREDENTIALS_PATH=./google-credentials.json" >> .env
+          echo "CATEGORY=skincare" >> .env
+
+      # 6. Google 인증 파일 생성
+      - name: Google 인증 파일 생성
+        run: echo '${{ secrets.GOOGLE_CREDENTIALS }}' > google-credentials.json
+
+      # 7. 수집 실행
+      - name: 랭킹 수집 실행
+        run: node src/runner.js
+
+      # 8. 실패 시 스크린샷 업로드 (디버깅용)
+      - name: 실패 시 스크린샷 저장
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          path: debug/
+          retention-days: 7
