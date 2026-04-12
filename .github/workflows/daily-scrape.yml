@@ -36,11 +36,9 @@ jobs:
           echo "GOOGLE_CREDENTIALS_PATH=./google-credentials.json" >> .env
           echo "CATEGORY=skincare" >> .env
 
-      # 6. Google 인증 파일 생성 (Node.js로 안전하게 작성)
+      # 6. Google 인증 파일 생성 (base64 디코딩)
       - name: Google 인증 파일 생성
-        run: node -e "require('fs').writeFileSync('google-credentials.json', process.env.GOOGLE_CREDENTIALS)"
-        env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        run: echo "${{ secrets.GOOGLE_CREDENTIALS_B64 }}" | base64 -d > google-credentials.json
 
       # 7. 수집 실행
       - name: 랭킹 수집 실행
