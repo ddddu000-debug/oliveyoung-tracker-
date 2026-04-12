@@ -44,6 +44,8 @@ jobs:
       # 6. 수집 실행
       - name: 랭킹 수집 실행
         run: node src/runner.js
+        env:
+          DASHBOARD_PATH: ./dashboard.html
 
       # 7. 생성된 dashboard.html을 docs/ 폴더로 복사
       - name: 대시보드 파일 준비

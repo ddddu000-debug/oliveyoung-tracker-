@@ -84,9 +84,9 @@ async function generateReport() {
 
   // ── HTML 생성 ─────────────────────────────────────────────────────
   const html = buildHtml(DATA);
-  const outPath = path.join('..', 'dashboard.html');
+  const outPath = process.env.DASHBOARD_PATH || path.join('..', 'dashboard.html');
   fs.writeFileSync(outPath, html, 'utf8');
-  console.log('  ✅ 대시보드 생성: du claude/dashboard.html');
+  console.log(`  ✅ 대시보드 생성: ${outPath}`);
 }
 
 function buildHtml(D) {
