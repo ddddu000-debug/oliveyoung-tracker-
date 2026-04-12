@@ -1,30 +1,18 @@
-const { getSheets, readSheet } = require('./sheets');
+const { fetchAllSnapshots, fetchAllChanges } = require('./database');
 const fs   = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-function toObj(headers, row) {
-  const o = {};
-  headers.forEach((h, i) => o[h] = row[i] ?? '');
-  return o;
-}
-
 async function generateReport() {
   console.log('\n[리포트] 대시보드 생성 중...');
-  const sheets = await getSheets();
 
-  const rawRows    = await readSheet(sheets, 'raw_snapshots');
-  const changeRows = await readSheet(sheets, 'daily_changes');
+  const snaps   = await fetchAllSnapshots();
+  const changes = await fetchAllChanges();
 
-  if (rawRows.length < 2) {
+  if (snaps.length === 0) {
     console.log('  데이터가 아직 없어요.');
     return;
   }
-
-  const rawH     = rawRows[0];
-  const changeH  = changeRows[0] || [];
-  const snaps    = rawRows.slice(1).map(r => toObj(rawH, r));
-  const changes  = changeRows.slice(1).map(r => toObj(changeH, r));
 
   // ── 날짜 / 카테고리 목록 ──────────────────────────────────────────
   const allDates    = [...new Set(snaps.map(r => r.snapshot_date))].sort();

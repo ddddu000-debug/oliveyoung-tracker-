@@ -32,17 +32,10 @@ jobs:
       # 5. 환경 변수 파일 생성
       - name: .env 파일 생성
         run: |
-          echo "SPREADSHEET_ID=${{ secrets.SPREADSHEET_ID }}" >> .env
-          echo "GOOGLE_CREDENTIALS_PATH=./google-credentials.json" >> .env
-          echo "CATEGORY=skincare" >> .env
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
+          echo "SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}" >> .env
 
-      # 6. Google 인증 파일 생성 (Python으로 base64 디코딩)
-      - name: Google 인증 파일 생성
-        run: python3 -c "import base64,os; open('google-credentials.json','wb').write(base64.b64decode(os.environ['GOOGLE_CREDENTIALS_B64']))"
-        env:
-          GOOGLE_CREDENTIALS_B64: ${{ secrets.GOOGLE_CREDENTIALS_B64 }}
-
-      # 7. 수집 실행
+      # 6. 수집 실행
       - name: 랭킹 수집 실행
         run: node src/runner.js
 

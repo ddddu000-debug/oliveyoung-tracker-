@@ -1,12 +1,16 @@
-const { scrapeAll }                              = require('./scraper');
-const { CATEGORIES }                             = require('./categories');
-const { saveRawSnapshots, saveDailyChanges,
-        saveBrandEntries, readSheet, getSheets }  = require('./sheets');
-const { analyze }                                = require('./analyzer');
-const { updateDashboard }                        = require('./dashboard');
-const { generateReport }                         = require('./report');
-const { makeProductKey }                         = require('./normalizer');
-const log                                        = require('./logger');
+const { scrapeAll }             = require('./scraper');
+const { CATEGORIES }            = require('./categories');
+const { saveRawSnapshots,
+        saveDailyChanges,
+        saveBrandEntries,
+        fetchYesterdaySnapshots } = require('./database');
+const { analyze }               = require('./analyzer');
+const { updateDashboard }       = require('./dashboard');
+const { generateReport }        = require('./report');
+const { makeProductKey,
+        normalizeBrand }        = require('./normalizer');
+const { createClient }          = require('@supabase/supabase-js');
+const log                       = require('./logger');
 require('dotenv').config();
 
 // 실패 시 최대 3번 재시도 (1초 → 3초 → 9초 간격)
@@ -22,6 +26,18 @@ async function withRetry(fn, name, maxTries = 3) {
       await new Promise(r => setTimeout(r, wait));
     }
   }
+}
+
+// 과거에 등장한 브랜드 key 목록 조회
+async function fetchPastBrandKeys(category, today) {
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+  const { data } = await supabase
+    .from('raw_snapshots')
+    .select('brand_name_raw')
+    .eq('category', category)
+    .lt('snapshot_date', today);
+  const keys = new Set((data || []).map(r => normalizeBrand(r.brand_name_raw)));
+  return keys;
 }
 
 async function run() {
@@ -40,7 +56,6 @@ async function run() {
     });
 
     // 3. 카테고리별로 저장 + 분석
-    const sheets  = await getSheets();
     const allDailyChanges = [];
     const allBrandEntries = [];
 
@@ -53,31 +68,32 @@ async function run() {
       // raw_snapshots 저장
       await withRetry(() => saveRawSnapshots(catProducts), `${category.label} raw_snapshots 저장`);
 
-      // 전체 데이터 읽기 (카테고리 필터링)
-      const allRows   = await readSheet(sheets, 'raw_snapshots');
-      const catRows   = [allRows[0], ...allRows.slice(1).filter(r => r[3] === category.name)];
+      // 어제 데이터 + 과거 브랜드 목록 조회
+      const today           = catProducts[0].snapshot_date;
+      const yesterdayData   = await withRetry(() => fetchYesterdaySnapshots(category.name), `${category.label} 어제 데이터 조회`);
+      const pastBrandKeys   = await withRetry(() => fetchPastBrandKeys(category.name, today), `${category.label} 과거 브랜드 조회`);
 
       // 변동 분석
-      const { dailyChanges, brandEntries } = analyze(catRows, catProducts);
+      const { dailyChanges, brandEntries } = analyze(yesterdayData, catProducts, pastBrandKeys);
       allDailyChanges.push(...dailyChanges);
       allBrandEntries.push(...brandEntries);
 
-      const risers = dailyChanges.filter(c => c.rank_change > 0).length;
+      const risers  = dailyChanges.filter(c => c.rank_change > 0).length;
       const fallers = dailyChanges.filter(c => c.rank_change < 0).length;
       const newOnes = dailyChanges.filter(c => c.is_new_entry).length;
       log.info(`  순위 상승: ${risers}개 | 하락: ${fallers}개 | 신규: ${newOnes}개`);
     }
 
-    // 6. daily_changes 저장
+    // 4. daily_changes 저장
     await withRetry(() => saveDailyChanges(allDailyChanges), 'daily_changes 저장');
 
-    // 7. brand_entries 저장
+    // 5. brand_entries 저장
     await withRetry(() => saveBrandEntries(allBrandEntries), 'brand_entries 저장');
 
-    // 8. dashboard 갱신
-    await withRetry(() => updateDashboard(products, allDailyChanges), 'dashboard 갱신');
+    // 6. dashboard 시트 갱신 (Google Sheets 대시보드 시트 - 선택적)
+    // await withRetry(() => updateDashboard(products, allDailyChanges), 'dashboard 갱신');
 
-    // 9. HTML 대시보드 생성
+    // 7. HTML 대시보드 생성
     await withRetry(() => generateReport(), 'HTML 대시보드 생성');
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
