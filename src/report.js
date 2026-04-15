@@ -140,7 +140,7 @@ async function generateReport() {
     latestDate,
     allDates,
     categories,
-    catLabels: { skincare: '스킨케어', bodycare: '바디케어' },
+    catLabels: { skincare: '스킨케어', bodycare: '바디케어', haircare: '헤어케어', makeup: '메이크업' },
     byCategDate,
     brandHistory,
     otukDates: Object.fromEntries(
@@ -251,7 +251,42 @@ tr:hover td{background:#f9fdf9;}
 .date-btn.otuk-day{border-color:#ff6b35;color:#ff6b35;}
 .date-btn.active.otuk-day{background:#ff6b35;color:#fff;}
 
-@media(max-width:768px){.grid2,.grid3{grid-template-columns:1fr;}}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.mv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;}
+
+@media(max-width:768px){
+  header{padding:12px 14px;}
+  header h1{font-size:17px;}
+  .wrap{padding:12px 10px;}
+  .grid2,.grid3{grid-template-columns:1fr;}
+  .grid3{grid-template-columns:repeat(2,1fr);}
+  .cat-tabs{position:sticky;top:0;z-index:100;background:#f4f6f9;
+    overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;
+    padding:8px 10px 8px;margin:0 -10px 14px;border-bottom:1px solid #e0e0e0;}
+  .cat-tab{white-space:nowrap;padding:7px 14px;font-size:13px;}
+  .card{padding:12px;border-radius:10px;margin-bottom:12px;}
+  .card h2{font-size:13px;}
+  table{font-size:12px;}
+  th,td{padding:5px 7px;}
+  .stat .n{font-size:22px;}
+  .stat{padding:10px;}
+  .brand-select-area{flex-direction:column;align-items:stretch;}
+  .brand-select-area select{min-width:0;width:100%;}
+  .brand-select-area span{margin-top:4px;}
+  .chart-wrap{height:190px;}
+  .chart-wrap2{height:150px;}
+  .date-btn{font-size:11px;padding:4px 9px;}
+  .mv-grid{grid-template-columns:1fr;}
+  .otuk-banner{padding:10px 14px;gap:8px;}
+  .otuk-banner .ico{font-size:22px;}
+}
+@media(max-width:480px){
+  .grid3{grid-template-columns:1fr 1fr;}
+  header h1{font-size:15px;}
+  header p{font-size:11px;}
+  .stat .n{font-size:18px;}
+  .stat .l{font-size:11px;}
+}
 </style>
 </head>
 <body>
@@ -312,7 +347,7 @@ tr:hover td{background:#f9fdf9;}
     return `<div class="grid2 cat-section" data-cat="${cat}">
       <div class="card">
         <h2>🏆 ${catLabels[cat]||cat} 오늘 TOP 10</h2>
-        <table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>판매가</th><th>할인</th><th>배지</th></tr></thead><tbody>
+        <div class="tbl-wrap"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>판매가</th><th>할인</th><th>배지</th></tr></thead><tbody>
         ${todaySnaps.slice(0,10).map(p => {
           const rc  = +p.rank === 1 ? 'r1' : +p.rank === 2 ? 'r2' : +p.rank === 3 ? 'r3' : 'rn';
           const disc = p.price_discount_rate ? Math.round(+p.price_discount_rate*100)+'%' : '-';
@@ -330,7 +365,7 @@ tr:hover td{background:#f9fdf9;}
             <td>${badges}</td>
           </tr>`;
         }).join('')}
-        </tbody></table>
+        </tbody></table></div>
       </div>
 
       <div class="card">
@@ -402,7 +437,7 @@ tr:hover td{background:#f9fdf9;}
               x:{ title:{display:true,text:'날짜'} }
             },
             plugins:{
-              legend:{position:'right',labels:{font:{size:11}}},
+              legend:{position:window?.innerWidth<600?'bottom':'right',labels:{font:{size:11},boxWidth:12}},
               tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.raw+'위'}}
             }
           }
@@ -448,7 +483,7 @@ tr:hover td{background:#f9fdf9;}
       <h2>💰 ${catLabels[cat]||cat} 가격 변동</h2>
       ${priceChanged.length === 0
         ? '<p class="no-data">오늘 가격 변동 없음</p>'
-        : `<table><thead><tr><th>브랜드</th><th>오늘</th><th>전일</th><th>변동액</th><th>변동률</th></tr></thead><tbody>
+        : `<div class="tbl-wrap"><table><thead><tr><th>브랜드</th><th>오늘</th><th>전일</th><th>변동액</th><th>변동률</th></tr></thead><tbody>
           ${priceChanged.map(c => {
             const diff = +c.price_change;
             const cls  = diff > 0 ? 'price-up' : 'price-dn';
@@ -462,7 +497,7 @@ tr:hover td{background:#f9fdf9;}
               <td class="${cls}">${rate}</td>
             </tr>`;
           }).join('')}
-          </tbody></table>`
+          </tbody></table></div>`
       }
     </div>`;
   }).join('')}
@@ -481,7 +516,7 @@ tr:hover td{background:#f9fdf9;}
       </div>
       ${catDates.map((d,i) => `
         <div id="hist-${cat}-${d}" style="display:${i===0?'block':'none'}">
-          <table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>정가</th><th>판매가</th><th>할인율</th></tr></thead><tbody>
+          <div class="tbl-wrap"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>정가</th><th>판매가</th><th>할인율</th></tr></thead><tbody>
           ${(byCategDate[cat]?.[d]||[]).slice(0,5).map(p => {
             const rc = +p.rank===1?'r1':+p.rank===2?'r2':+p.rank===3?'r3':'rn';
             const disc = p.price_discount_rate ? Math.round(+p.price_discount_rate*100)+'%' : '-';
@@ -494,7 +529,7 @@ tr:hover td{background:#f9fdf9;}
               <td>${disc}</td>
             </tr>`;
           }).join('')}
-          </tbody></table>
+          </tbody></table></div>
         </div>`).join('')}
     </div>`;
   }).join('')}
@@ -604,7 +639,7 @@ tr:hover td{background:#f9fdf9;}
             '<span style="font-weight:700;">📅 ' + d + '</span>' +
             '<span style="font-size:12px;color:#666;">' + summary + ' ▾</span>' +
             '</summary>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;overflow-x:auto;">' +
+            '<div class="mv-grid">' +
             (entryRows
               ? '<div><p style="font-size:12px;font-weight:700;color:#1565c0;margin-bottom:6px;">🆕 신규 진입 (' + entries.length + ')</p>' +
                 '<table><thead><tr><th>브랜드</th><th>순위</th></tr></thead><tbody>' + entryRows + '</tbody></table></div>'
@@ -751,7 +786,7 @@ function showBrandDetail() {
 
   const tableHtml = brandProds.length === 0 ? '<p class="no-data">오늘 랭킹에 없음</p>' :
     '<p style="font-size:12px;color:#666;margin-bottom:8px;">오늘 랭킹 상품</p>' +
-    '<table><thead><tr><th>순위</th><th>상품명</th><th>정가</th><th>판매가</th><th>할인율</th><th>배지</th></tr></thead><tbody>' +
+    '<div class="tbl-wrap"><table><thead><tr><th>순위</th><th>상품명</th><th>정가</th><th>판매가</th><th>할인율</th><th>배지</th></tr></thead><tbody>' +
     brandProds.map(p => {
       const disc = p.price_discount_rate ? Math.round(+p.price_discount_rate*100)+'%' : '-';
       const badges = (p.badges||'').split(',').filter(Boolean).map(b => {
@@ -761,7 +796,7 @@ function showBrandDetail() {
       return '<tr><td>'+p.rank+'위</td><td>'+p.product_name_raw+'</td><td>'+
         (p.list_price?(+p.list_price).toLocaleString()+'원':'-')+'</td><td>'+
         (p.sale_price?(+p.sale_price).toLocaleString()+'원':'-')+'</td><td>'+disc+'</td><td>'+badges+'</td></tr>';
-    }).join('') + '</tbody></table>';
+    }).join('') + '</tbody></table></div>';
 
   document.getElementById('brand-products-wrap').innerHTML = tableHtml;
   detail.classList.add('show');
@@ -778,7 +813,7 @@ refreshBrandList();
 function buildDataHtml(snaps, changes) {
   const allDates   = [...new Set(snaps.map(r => r.snapshot_date))].sort();
   const categories = [...new Set(snaps.map(r => r.category))];
-  const catLabels  = { skincare: '스킨케어', bodycare: '바디케어' };
+  const catLabels  = { skincare: '스킨케어', bodycare: '바디케어', haircare: '헤어케어', makeup: '메이크업' };
   const latestDate = allDates[allDates.length - 1] || '';
 
   const dateOptions    = allDates.map(d => `<option value="${d}">${d}</option>`).join('');
