@@ -237,11 +237,6 @@ tr:hover td{background:#f9fdf9;}
 .brand-select-area select{padding:8px 12px;border-radius:8px;border:1.5px solid #ddd;
   font-size:13px;min-width:200px;cursor:pointer;}
 .brand-select-area select:focus{outline:none;border-color:#40916c;}
-.brand-combo{display:flex;flex-direction:column;gap:5px;min-width:220px;}
-.brand-combo input{padding:8px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;background:#fff;}
-.brand-combo input:focus{outline:none;border-color:#40916c;box-shadow:0 0 0 3px rgba(64,145,108,.1);}
-.brand-combo select{padding:7px 10px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;cursor:pointer;background:#fff;}
-.brand-combo select:focus{outline:none;border-color:#40916c;}
 .brand-detail{display:none;}
 .brand-detail.show{display:block;}
 .chart-wrap{height:260px;position:relative;}
@@ -426,12 +421,9 @@ tr:hover td{background:#f9fdf9;}
         ${categories.map(c => `<option value="${c}">${catLabels[c]||c}</option>`).join('')}
       </select>
       <span style="font-size:13px;font-weight:600;color:#555;">브랜드</span>
-      <div class="brand-combo">
-        <input id="brand-search-input" type="text" placeholder="🔍 브랜드 검색..." autocomplete="off" oninput="filterBrandList()">
-        <select id="brand-sel" onchange="showBrandDetail()">
-          <option value="">-- 브랜드를 선택하세요 --</option>
-        </select>
-      </div>
+      <select id="brand-sel" onchange="showBrandDetail()">
+        <option value="">-- 브랜드를 선택하세요 --</option>
+      </select>
     </div>
 
     <div id="brand-detail" class="brand-detail">
@@ -666,31 +658,18 @@ function showHistDate(cat, date, btn) {
   btn.classList.add('active');
 }
 
-// ── 브랜드 검색 + 선택 ───────────────────────────────────────────
-let _allBrands = [];
-
+// ── 브랜드 선택 ───────────────────────────────────────────
 function refreshBrandList() {
-  const cat        = document.getElementById('brand-cat-sel').value;
-  const latestDate = ALL_DATES[ALL_DATES.length - 1];
-  const todaySnaps = BY_CATEG_DATE[cat]?.[latestDate] || [];
-  _allBrands = [...new Set(todaySnaps.map(p => p.brand_name_raw).filter(Boolean))];
-  document.getElementById('brand-search-input').value = '';
-  renderBrandSelect(_allBrands);
-  document.getElementById('brand-detail').classList.remove('show');
-}
-
-function filterBrandList() {
-  const q = document.getElementById('brand-search-input').value.toLowerCase().trim();
-  renderBrandSelect(q ? _allBrands.filter(b => b.toLowerCase().includes(q)) : _allBrands);
-}
-
-function renderBrandSelect(brands) {
+  const cat = document.getElementById('brand-cat-sel').value;
+  const allCatBrands = new Set();
+  Object.values(BY_CATEG_DATE[cat] || {}).forEach(daySnaps => {
+    daySnaps.forEach(p => { if (p.brand_name_raw) allCatBrands.add(p.brand_name_raw); });
+  });
+  const sorted = [...allCatBrands].sort();
   const sel = document.getElementById('brand-sel');
-  const prev = sel.value;
   sel.innerHTML = '<option value="">-- 브랜드를 선택하세요 --</option>' +
-    brands.map(b => '<option value="' + b.replace(/"/g, '&quot;') + '">' + b + '</option>').join('');
-  // 검색 후에도 이미 선택된 브랜드 유지
-  if (prev && brands.includes(prev)) sel.value = prev;
+    sorted.map(b => '<option value="' + b.replace(/"/g, '&quot;') + '">' + b + '</option>').join('');
+  document.getElementById('brand-detail').classList.remove('show');
 }
 
 // ── 브랜드 상세 표시 ─────────────────────────────────────────────
