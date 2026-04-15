@@ -4,14 +4,21 @@ const { saveRawSnapshots,
         saveDailyChanges,
         saveBrandEntries,
         fetchYesterdaySnapshots } = require('./database');
+const {
+  saveRawSnapshots:  sheetsSaveRaw,
+  saveDailyChanges:  sheetsSaveChanges,
+  saveBrandEntries:  sheetsSaveEntries,
+  updateDashboard:   sheetsUpdateDashboard
+}                               = require('./sheets');
 const { analyze }               = require('./analyzer');
-const { updateDashboard }       = require('./dashboard');
 const { generateReport }        = require('./report');
 const { makeProductKey,
         normalizeBrand }        = require('./normalizer');
 const { createClient }          = require('@supabase/supabase-js');
 const log                       = require('./logger');
 require('dotenv').config();
+
+const USE_SHEETS = !!(process.env.GOOGLE_SHEETS_ID && process.env.GOOGLE_APPLICATION_CREDENTIALS);
 
 // 실패 시 최대 3번 재시도 (1초 → 3초 → 9초 간격)
 async function withRetry(fn, name, maxTries = 3) {
@@ -25,6 +32,15 @@ async function withRetry(fn, name, maxTries = 3) {
       log.info(`${wait / 1000}초 후 재시도...`);
       await new Promise(r => setTimeout(r, wait));
     }
+  }
+}
+
+// Sheets 저장 — 실패해도 전체 파이프라인은 멈추지 않음
+async function trySheetsWithRetry(fn, name) {
+  try {
+    await withRetry(fn, name);
+  } catch (err) {
+    log.warn(`[Sheets] ${name} 최종 실패 (메인 플로우는 계속): ${err.message}`);
   }
 }
 
@@ -44,6 +60,8 @@ async function run() {
   const startTime = Date.now();
   log.info('============================');
   log.info(' 올리브영 랭킹 수집 시작');
+  if (USE_SHEETS) log.info(' Google Sheets 연동: ON');
+  else            log.info(' Google Sheets 연동: OFF (GOOGLE_SHEETS_ID 또는 GOOGLE_APPLICATION_CREDENTIALS 없음)');
   log.info('============================');
 
   try {
@@ -65,13 +83,18 @@ async function run() {
 
       log.info(`\n[${category.label}] 처리 중...`);
 
-      // raw_snapshots 저장
+      // raw_snapshots 저장 — Supabase (메인)
       await withRetry(() => saveRawSnapshots(catProducts), `${category.label} raw_snapshots 저장`);
 
+      // raw_snapshots 저장 — Google Sheets (보조)
+      if (USE_SHEETS) {
+        await trySheetsWithRetry(() => sheetsSaveRaw(catProducts), `${category.label} Sheets raw_snapshots 저장`);
+      }
+
       // 어제 데이터 + 과거 브랜드 목록 조회
-      const today           = catProducts[0].snapshot_date;
-      const yesterdayData   = await withRetry(() => fetchYesterdaySnapshots(category.name), `${category.label} 어제 데이터 조회`);
-      const pastBrandKeys   = await withRetry(() => fetchPastBrandKeys(category.name, today), `${category.label} 과거 브랜드 조회`);
+      const today         = catProducts[0].snapshot_date;
+      const yesterdayData = await withRetry(() => fetchYesterdaySnapshots(category.name), `${category.label} 어제 데이터 조회`);
+      const pastBrandKeys = await withRetry(() => fetchPastBrandKeys(category.name, today), `${category.label} 과거 브랜드 조회`);
 
       // 변동 분석
       const { dailyChanges, brandEntries } = analyze(yesterdayData, catProducts, pastBrandKeys);
@@ -84,14 +107,18 @@ async function run() {
       log.info(`  순위 상승: ${risers}개 | 하락: ${fallers}개 | 신규: ${newOnes}개`);
     }
 
-    // 4. daily_changes 저장
+    // 4. daily_changes 저장 — Supabase
     await withRetry(() => saveDailyChanges(allDailyChanges), 'daily_changes 저장');
 
-    // 5. brand_entries 저장
+    // 5. brand_entries 저장 — Supabase
     await withRetry(() => saveBrandEntries(allBrandEntries), 'brand_entries 저장');
 
-    // 6. dashboard 시트 갱신 (Google Sheets 대시보드 시트 - 선택적)
-    // await withRetry(() => updateDashboard(products, allDailyChanges), 'dashboard 갱신');
+    // 6. Google Sheets — daily_changes / brand_entries / 대시보드 시트
+    if (USE_SHEETS) {
+      await trySheetsWithRetry(() => sheetsSaveChanges(allDailyChanges), 'Sheets daily_changes 저장');
+      await trySheetsWithRetry(() => sheetsSaveEntries(allBrandEntries),  'Sheets brand_entries 저장');
+      await trySheetsWithRetry(() => sheetsUpdateDashboard(products, allDailyChanges), 'Sheets 대시보드 갱신');
+    }
 
     // 7. HTML 대시보드 생성
     await withRetry(() => generateReport(), 'HTML 대시보드 생성');
