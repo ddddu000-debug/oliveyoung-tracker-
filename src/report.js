@@ -18,7 +18,13 @@ async function generateReport() {
   // ── 날짜 / 카테고리 목록 ──────────────────────────────────────────
   const allDates    = [...new Set(snaps.map(r => r.snapshot_date))].sort();
   const latestDate  = allDates[allDates.length - 1];
-  const categories  = [...new Set(snaps.map(r => r.category))];
+  const CATEG_ORDER = ['skincare', 'bodycare'];
+  const categories  = [...new Set(snaps.map(r => r.category))].sort(
+    (a, b) => {
+      const ai = CATEG_ORDER.indexOf(a); const bi = CATEG_ORDER.indexOf(b);
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    }
+  );
 
   // ── 카테고리 × 날짜별 스냅샷 ─────────────────────────────────────
   const byCategDate = {}; // { skincare: { '2026-04-12': [...] } }
@@ -635,17 +641,13 @@ const CAT_LABELS    = ${JSON.stringify(D.catLabels)};
 let currentCat = 'all';
 function switchCat(cat, btn) {
   currentCat = cat;
+
+  // 탭 버튼 active 상태
   document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
-  // cat-section 표시/숨김
-  document.querySelectorAll('.cat-section').forEach(el => {
-    const elCat = el.dataset.cat;
-    el.style.display = (cat === 'all' || cat === elCat) ? '' : 'none';
-  });
-
-  // 오특 배너 표시/숨김
-  document.querySelectorAll('[data-cat].otuk-banner, .otuk-banner[data-cat]').forEach(el => {
+  // data-cat 속성이 있는 모든 요소 표시/숨김
+  document.querySelectorAll('[data-cat]').forEach(el => {
     el.style.display = (cat === 'all' || cat === el.dataset.cat) ? '' : 'none';
   });
 
