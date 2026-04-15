@@ -1,5 +1,5 @@
 const { fetchAllSnapshots, fetchAllChanges } = require('./database');
-const { makeProductKey } = require('./normalizer');
+const { makeProductKey, normalizeBrand } = require('./normalizer');
 const fs   = require('fs');
 const path = require('path');
 require('dotenv').config();
@@ -71,6 +71,58 @@ async function generateReport() {
     c._category = keyToCategory[c.product_key] || 'unknown';
   });
 
+  // ── 브랜드 진입 / 이탈 이력 ──────────────────────────────────────
+  // raw_snapshots 전체를 기반으로 계산 → 기존 데이터 자동 포함
+  // brandMovements[cat][date] = { entries: [{name, rank, isFirstEver}], exits: [{name, lastRank}] }
+  const brandMovements = {};
+  categories.forEach(cat => {
+    brandMovements[cat] = {};
+    const catDates = allDates.filter(d => byCategDate[cat]?.[d]);
+
+    for (let i = 1; i < catDates.length; i++) {
+      const prevD = catDates[i - 1];
+      const currD = catDates[i];
+
+      // 날짜별 브랜드 Map: brandKey → { name, rank }
+      const prevBrands = new Map();
+      const currBrands = new Map();
+      (byCategDate[cat][prevD] || []).forEach(p => {
+        const k = normalizeBrand(p.brand_name_raw);
+        if (!prevBrands.has(k)) prevBrands.set(k, { name: p.brand_name_raw, rank: +p.rank });
+      });
+      (byCategDate[cat][currD] || []).forEach(p => {
+        const k = normalizeBrand(p.brand_name_raw);
+        if (!currBrands.has(k)) currBrands.set(k, { name: p.brand_name_raw, rank: +p.rank });
+      });
+
+      // 역대 첫 등장 판별용: currD 이전 모든 날짜에 등장한 브랜드 key 집합
+      const allPrevKeys = new Set();
+      catDates.slice(0, i).forEach(pd =>
+        (byCategDate[cat][pd] || []).forEach(p => allPrevKeys.add(normalizeBrand(p.brand_name_raw)))
+      );
+
+      // 신규 진입: currD에 있지만 prevD에 없는 브랜드
+      const entries = [];
+      currBrands.forEach((info, key) => {
+        if (!prevBrands.has(key))
+          entries.push({ name: info.name, rank: info.rank, isFirstEver: !allPrevKeys.has(key) });
+      });
+
+      // 이탈: prevD에 있지만 currD에 없는 브랜드
+      const exits = [];
+      prevBrands.forEach((info, key) => {
+        if (!currBrands.has(key))
+          exits.push({ name: info.name, lastRank: info.rank });
+      });
+
+      if (entries.length > 0 || exits.length > 0)
+        brandMovements[cat][currD] = {
+          entries: entries.sort((a, b) => a.rank - b.rank),
+          exits:   exits.sort((a, b) => a.lastRank - b.lastRank),
+        };
+    }
+  });
+
   // ── 직렬화할 데이터 오브젝트 ──────────────────────────────────────
   const DATA = {
     latestDate,
@@ -83,6 +135,7 @@ async function generateReport() {
       Object.entries(otukDates).map(([k, v]) => [k, [...v]])
     ),
     todayChanges,
+    brandMovements,
   };
 
   // ── HTML 생성 ─────────────────────────────────────────────────────
@@ -100,7 +153,7 @@ async function generateReport() {
 
 function buildHtml(D) {
   const { latestDate, allDates, categories, catLabels,
-          byCategDate, brandHistory, otukDates, todayChanges } = D;
+          byCategDate, brandHistory, otukDates, todayChanges, brandMovements } = D;
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -164,6 +217,8 @@ tr:hover td{background:#f9fdf9;}
 .t-other{background:#e8eaf6;color:#3949ab;}
 .price-dn{color:#e74c3c;}.price-up{color:#3498db;}
 .otuk-dot{display:inline-block;width:8px;height:8px;background:#ff6b35;border-radius:50%;margin-right:4px;}
+.t-first{background:#e3f2fd;color:#1565c0;font-weight:700;}
+.t-exit{background:#fce4ec;color:#c62828;}
 
 /* 브랜드 분석 */
 .brand-select-area{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
@@ -275,6 +330,21 @@ tr:hover td{background:#f9fdf9;}
             ${fallers.map(r=>`<tr><td>${r.brand_key}</td><td>${r.today_rank}위</td><td>${r.yesterday_rank}위</td><td class="dn">▼ ${Math.abs(+r.rank_change)}</td></tr>`).join('')}
           </tbody></table>`
         }
+        ${(() => {
+          const mv = brandMovements[cat]?.[latestDate];
+          if (!mv) return '';
+          const entryRows = (mv.entries||[]).map(e =>
+            '<tr><td>' + (e.isFirstEver ? '<span class="tag t-first">★ 첫등장</span> ' : '') +
+            '<strong>' + e.name + '</strong></td><td>' + e.rank + '위</td></tr>'
+          ).join('');
+          const exitRows = (mv.exits||[]).map(e =>
+            '<tr><td>' + e.name + '</td><td style="color:#999;">' + e.lastRank + '위 → 이탈</td></tr>'
+          ).join('');
+          return (entryRows ? '<p style="font-size:12px;font-weight:700;color:#1565c0;margin:12px 0 6px;">🆕 오늘 신규 진입</p>' +
+            '<table><thead><tr><th>브랜드</th><th>순위</th></tr></thead><tbody>' + entryRows + '</tbody></table>' : '') +
+            (exitRows ? '<p style="font-size:12px;font-weight:700;color:#c62828;margin:12px 0 6px;">👋 오늘 이탈</p>' +
+            '<table><thead><tr><th>브랜드</th><th>전일 순위</th></tr></thead><tbody>' + exitRows + '</tbody></table>' : '');
+        })()}
       </div>
     </div>`;
   }).join('')}
@@ -467,6 +537,62 @@ tr:hover td{background:#f9fdf9;}
           }).join('');
         }).join('')
     }
+  </div>
+
+  <!-- 브랜드 진입 / 이탈 전체 이력 -->
+  <div class="card full">
+    <h2>📊 브랜드 진입 / 이탈 전체 이력</h2>
+    <p style="font-size:12px;color:#888;margin-bottom:16px;">
+      🆕 신규 진입: 전날 100위권 밖에서 진입 &nbsp;|&nbsp;
+      ★ 역대 첫 등장: 수집 시작 이후 처음으로 100위권 진입 &nbsp;|&nbsp;
+      👋 이탈: 전날 100위권이었으나 오늘 밖으로 이탈
+    </p>
+    ${categories.map(cat => {
+      const allMvDates = Object.keys(brandMovements[cat]||{}).sort().reverse();
+      if (!allMvDates.length) return '<p class="no-data">이탈/진입 데이터가 아직 없어요.</p>';
+      return '<p style="font-weight:700;color:#1b4332;margin:0 0 10px;">' + (catLabels[cat]||cat) + '</p>' +
+        allMvDates.map(d => {
+          const mv = brandMovements[cat][d];
+          const entries = mv.entries || [];
+          const exits   = mv.exits   || [];
+          const firstEverCount = entries.filter(e => e.isFirstEver).length;
+          const summary = [
+            entries.length ? '🆕 진입 ' + entries.length + '개' : '',
+            firstEverCount ? '(★ 첫등장 ' + firstEverCount + '개 포함)' : '',
+            exits.length   ? '👋 이탈 ' + exits.length + '개' : '',
+          ].filter(Boolean).join(' ');
+
+          const entryRows = entries.map(e =>
+            '<tr>' +
+            '<td>' + (e.isFirstEver ? '<span class="tag t-first">★ 첫등장</span> ' : '<span class="tag t-other">재진입</span> ') +
+            '<strong>' + e.name + '</strong></td>' +
+            '<td>' + e.rank + '위</td></tr>'
+          ).join('');
+          const exitRows = exits.map(e =>
+            '<tr><td><span class="tag t-exit">이탈</span> ' + e.name + '</td>' +
+            '<td style="color:#999;">' + e.lastRank + '위 → 없음</td></tr>'
+          ).join('');
+
+          return '<details style="margin-bottom:8px;" ' + (d===allMvDates[0]?'open':'') + '>' +
+            '<summary style="cursor:pointer;padding:9px 14px;background:#f8f9fa;border:1px solid #e0e0e0;' +
+            'border-radius:8px;list-style:none;display:flex;justify-content:space-between;align-items:center;">' +
+            '<span style="font-weight:700;">📅 ' + d + '</span>' +
+            '<span style="font-size:12px;color:#666;">' + summary + ' ▾</span>' +
+            '</summary>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;overflow-x:auto;">' +
+            (entryRows
+              ? '<div><p style="font-size:12px;font-weight:700;color:#1565c0;margin-bottom:6px;">🆕 신규 진입 (' + entries.length + ')</p>' +
+                '<table><thead><tr><th>브랜드</th><th>순위</th></tr></thead><tbody>' + entryRows + '</tbody></table></div>'
+              : '<div><p class="no-data" style="padding:20px 0;">신규 진입 없음</p></div>'
+            ) +
+            (exitRows
+              ? '<div><p style="font-size:12px;font-weight:700;color:#c62828;margin-bottom:6px;">👋 이탈 (' + exits.length + ')</p>' +
+                '<table><thead><tr><th>브랜드</th><th>전일 순위</th></tr></thead><tbody>' + exitRows + '</tbody></table></div>'
+              : '<div><p class="no-data" style="padding:20px 0;">이탈 없음</p></div>'
+            ) +
+            '</div></details>';
+        }).join('');
+    }).join('<hr style="border:none;border-top:1px solid #eee;margin:16px 0;">') }
   </div>
 
 </div>
