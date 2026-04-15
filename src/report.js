@@ -523,19 +523,24 @@ tr:hover td{background:#f9fdf9;}
             const rows = items.map(p => {
               const prevP = prevD ? (byCategDate[cat][prevD]||[]).find(x => x.brand_name_raw===p.brand_name_raw && x.product_name_raw===p.product_name_raw) : null;
               const nextP = nextD ? (byCategDate[cat][nextD]||[]).find(x => x.brand_name_raw===p.brand_name_raw && x.product_name_raw===p.product_name_raw) : null;
-              const cur   = p.sale_price   ? +p.sale_price   : null;
-              const prev  = prevP?.sale_price ? +prevP.sale_price : null;
-              const next  = nextP?.sale_price ? +nextP.sale_price : null;
-              const diff  = (cur !== null && prev !== null) ? cur - prev : null;
-              const diffCls = diff === null ? '' : diff > 0 ? 'price-up' : diff < 0 ? 'price-dn' : '';
-              const diffStr = diff === null ? '-' : (diff > 0 ? '+' : '') + diff.toLocaleString() + '원';
-              const rc    = +p.rank===1?'r1':+p.rank===2?'r2':+p.rank===3?'r3':'rn';
+              const cur      = p.sale_price   ? +p.sale_price   : null;
+              const listP    = p.list_price   ? +p.list_price   : null;
+              const discRate = p.price_discount_rate ? Math.round(+p.price_discount_rate * 100) : null;
+              const prev     = prevP?.sale_price ? +prevP.sale_price : null;
+              const next     = nextP?.sale_price ? +nextP.sale_price : null;
+              const diff     = (cur !== null && prev !== null) ? cur - prev : null;
+              const diffCls  = diff === null ? '' : diff > 0 ? 'price-up' : diff < 0 ? 'price-dn' : '';
+              const diffStr  = diff === null ? '-' : (diff > 0 ? '+' : '') + diff.toLocaleString() + '원';
+              const rc       = +p.rank===1?'r1':+p.rank===2?'r2':+p.rank===3?'r3':'rn';
+              const curCell  = (cur !== null ? cur.toLocaleString()+'원' : '—') +
+                (discRate !== null ? '&nbsp;<span class="tag t-otuk">오특</span>&nbsp;<span style="font-size:11px;color:#e65100;font-weight:700;">' + discRate + '% 할인</span>' : '&nbsp;<span class="tag t-otuk">오특</span>') +
+                (listP !== null && discRate !== null ? '<br><span style="font-size:11px;color:#aaa;text-decoration:line-through;">정가 ' + listP.toLocaleString() + '원</span>' : '');
               return '<tr>' +
                 '<td><span class="rb ' + rc + '">' + p.rank + '</span></td>' +
                 '<td>' + p.brand_name_raw + '</td>' +
                 '<td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="' + p.product_name_raw + '">' + p.product_name_raw + '</td>' +
                 '<td>' + (prev !== null ? prev.toLocaleString()+'원' : prevD ? '—' : '(데이터없음)') + '</td>' +
-                '<td style="font-weight:700;">' + (cur !== null ? cur.toLocaleString()+'원' : '—') + '&nbsp;<span class="tag t-otuk">오특</span></td>' +
+                '<td style="font-weight:700;">' + curCell + '</td>' +
                 '<td>' + (next !== null ? next.toLocaleString()+'원' : nextD ? '—' : '(최신)') + '</td>' +
                 '<td class="' + diffCls + '">' + diffStr + '</td>' +
                 '</tr>';
