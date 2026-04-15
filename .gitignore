@@ -1,5 +1,6 @@
 node_modules/
 .env
+.env.txt
 debug/
 logs/
 google-credentials.json

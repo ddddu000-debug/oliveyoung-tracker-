@@ -90,6 +90,12 @@ async function generateReport() {
   const outPath = process.env.DASHBOARD_PATH || 'dashboard.html';
   fs.writeFileSync(outPath, html, 'utf8');
   console.log(`  ✅ 대시보드 생성: ${outPath}`);
+
+  // ── Raw 데이터 페이지 생성 ────────────────────────────────────────
+  const dataHtml = buildDataHtml(snaps, changes);
+  const dataPath = process.env.DATA_PAGE_PATH || path.join('..', 'data.html');
+  fs.writeFileSync(dataPath, dataHtml, 'utf8');
+  console.log(`  ✅ 데이터 페이지 생성: ${dataPath}`);
 }
 
 function buildHtml(D) {
@@ -182,9 +188,12 @@ tr:hover td{background:#f9fdf9;}
 </style>
 </head>
 <body>
-<header>
-  <h1>🛍️ 올리브영 랭킹 대시보드</h1>
-  <p>기준: ${latestDate} &nbsp;|&nbsp; 수집일: ${allDates.length}일 &nbsp;|&nbsp; 카테고리: ${categories.map(c => catLabels[c]||c).join(', ')}</p>
+<header style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+  <div>
+    <h1>🛍️ 올리브영 랭킹 대시보드</h1>
+    <p>기준: ${latestDate} &nbsp;|&nbsp; 수집일: ${allDates.length}일 &nbsp;|&nbsp; 카테고리: ${categories.map(c => catLabels[c]||c).join(', ')}</p>
+  </div>
+  <a href="data.html" style="padding:7px 16px;border-radius:20px;border:1.5px solid rgba(255,255,255,.6);color:#fff;font-size:12px;text-decoration:none;white-space:nowrap;">📦 Raw 데이터</a>
 </header>
 
 <div class="wrap">
@@ -200,7 +209,7 @@ tr:hover td{background:#f9fdf9;}
     ${categories.map(cat => {
       const hasOtuk = otukDates[cat]?.includes(latestDate);
       if (!hasOtuk) return '';
-      const items = (byCategDate[cat]?.[latestDate] || []).filter(p => p.has_otuk === 'true');
+      const items = (byCategDate[cat]?.[latestDate] || []).filter(p => p.has_otuk === true || p.has_otuk === 'true');
       return `<div class="otuk-banner" data-cat="${cat}">
         <div class="ico">🔥</div>
         <div>
@@ -344,7 +353,7 @@ tr:hover td{background:#f9fdf9;}
 
   <!-- 가격 변동 -->
   ${categories.map(cat => {
-    const priceChanged = todayChanges.filter(c => c._category === cat && c.is_price_changed === 'true');
+    const priceChanged = todayChanges.filter(c => c._category === cat && (c.is_price_changed === true || c.is_price_changed === 'true'));
     return `<div class="card cat-section" data-cat="${cat}">
       <h2>💰 ${catLabels[cat]||cat} 가격 변동</h2>
       ${priceChanged.length === 0
@@ -402,23 +411,60 @@ tr:hover td{background:#f9fdf9;}
 
   <!-- 오특 이력 -->
   <div class="card full">
-    <h2>🔥 오특 진행 이력</h2>
+    <h2>🔥 오특 진행 이력 — 상품별 가격 변동</h2>
     ${Object.values(otukDates).every(v=>v.length===0)
       ? '<p class="no-data">아직 오특 이벤트가 감지되지 않았어요.</p>'
       : categories.map(cat => {
           const dates = (otukDates[cat]||[]).sort().reverse();
           if (!dates.length) return '';
-          return `<p style="font-weight:700;color:#1b4332;margin-bottom:8px;">${catLabels[cat]||cat}</p>
-          <table style="margin-bottom:16px;"><thead><tr><th>날짜</th><th>상품 수</th><th>브랜드 목록</th></tr></thead><tbody>
-          ${dates.map(d => {
-            const items = (byCategDate[cat]?.[d]||[]).filter(p=>p.has_otuk==='true');
-            return `<tr>
-              <td><strong>${d}</strong> <span class="tag t-otuk">오특</span></td>
-              <td>${items.length}개</td>
-              <td>${items.map(p=>`${p.brand_name_raw}(${p.rank}위)`).join(', ')}</td>
-            </tr>`;
-          }).join('')}
-          </tbody></table>`;
+          const catDates = allDates.filter(d => byCategDate[cat]?.[d]);
+          const isOtuk   = v => v === true || v === 'true';
+
+          return '<p style="font-weight:700;color:#1b4332;margin:0 0 12px;">' + (catLabels[cat]||cat) + '</p>' +
+          dates.map(d => {
+            const items = (byCategDate[cat]?.[d]||[]).filter(p => isOtuk(p.has_otuk));
+            const dIdx  = catDates.indexOf(d);
+            const prevD = dIdx > 0 ? catDates[dIdx-1] : null;
+            const nextD = dIdx < catDates.length-1 ? catDates[dIdx+1] : null;
+
+            const rows = items.map(p => {
+              const prevP = prevD ? (byCategDate[cat][prevD]||[]).find(x => x.brand_name_raw===p.brand_name_raw && x.product_name_raw===p.product_name_raw) : null;
+              const nextP = nextD ? (byCategDate[cat][nextD]||[]).find(x => x.brand_name_raw===p.brand_name_raw && x.product_name_raw===p.product_name_raw) : null;
+              const cur   = p.sale_price   ? +p.sale_price   : null;
+              const prev  = prevP?.sale_price ? +prevP.sale_price : null;
+              const next  = nextP?.sale_price ? +nextP.sale_price : null;
+              const diff  = (cur !== null && prev !== null) ? cur - prev : null;
+              const diffCls = diff === null ? '' : diff > 0 ? 'price-up' : diff < 0 ? 'price-dn' : '';
+              const diffStr = diff === null ? '-' : (diff > 0 ? '+' : '') + diff.toLocaleString() + '원';
+              const rc    = +p.rank===1?'r1':+p.rank===2?'r2':+p.rank===3?'r3':'rn';
+              return '<tr>' +
+                '<td><span class="rb ' + rc + '">' + p.rank + '</span></td>' +
+                '<td>' + p.brand_name_raw + '</td>' +
+                '<td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="' + p.product_name_raw + '">' + p.product_name_raw + '</td>' +
+                '<td>' + (prev !== null ? prev.toLocaleString()+'원' : prevD ? '—' : '(데이터없음)') + '</td>' +
+                '<td style="font-weight:700;">' + (cur !== null ? cur.toLocaleString()+'원' : '—') + '&nbsp;<span class="tag t-otuk">오특</span></td>' +
+                '<td>' + (next !== null ? next.toLocaleString()+'원' : nextD ? '—' : '(최신)') + '</td>' +
+                '<td class="' + diffCls + '">' + diffStr + '</td>' +
+                '</tr>';
+            }).join('');
+
+            return '<details style="margin-bottom:10px;" ' + (d===dates[0]?'open':'') + '>' +
+              '<summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;">' +
+              '<span>📅 ' + d + '&nbsp;&nbsp;🔥 오특 진행</span>' +
+              '<span style="font-size:12px;font-weight:400;color:#999;">' + items.length + '개 상품 ▾</span>' +
+              '</summary>' +
+              '<div style="overflow-x:auto;margin-top:8px;">' +
+              (items.length === 0
+                ? '<p class="no-data" style="padding:20px;">오특 상품 데이터를 찾을 수 없습니다.</p>'
+                : '<table><thead><tr>' +
+                  '<th>#</th><th>브랜드</th><th>상품명</th>' +
+                  '<th>전날 (' + (prevD||'—') + ')</th>' +
+                  '<th>오특 당일 (' + d + ')</th>' +
+                  '<th>다음날 (' + (nextD||'—') + ')</th>' +
+                  '<th>전날比 변동</th>' +
+                  '</tr></thead><tbody>' + rows + '</tbody></table>'
+              ) + '</div></details>';
+          }).join('');
         }).join('')
     }
   </div>
@@ -583,6 +629,249 @@ function showBrandDetail() {
 // 초기화: 브랜드 목록 로드
 refreshBrandList();
 </script>
+</body>
+</html>`;
+}
+
+// ── Raw 데이터 페이지 생성 ─────────────────────────────────────────────
+function buildDataHtml(snaps, changes) {
+  const allDates   = [...new Set(snaps.map(r => r.snapshot_date))].sort();
+  const categories = [...new Set(snaps.map(r => r.category))];
+  const catLabels  = { skincare: '스킨케어', bodycare: '바디케어' };
+  const latestDate = allDates[allDates.length - 1] || '';
+
+  const dateOptions    = allDates.map(d => `<option value="${d}">${d}</option>`).join('');
+  const catOptions     = categories.map(c => `<option value="${c}">${catLabels[c]||c}</option>`).join('');
+  const snapCountLabel = snaps.length.toLocaleString();
+  const chgCountLabel  = changes.length.toLocaleString();
+
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Raw 데이터 | 올리브영 랭킹</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"><\/script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:#f4f6f9;color:#333;}
+header{background:linear-gradient(135deg,#1b4332,#40916c);color:#fff;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+header h1{font-size:18px;font-weight:700;}
+header p{font-size:12px;opacity:.8;margin-top:3px;}
+.back-btn{padding:7px 16px;border-radius:20px;border:1.5px solid rgba(255,255,255,.6);color:#fff;font-size:12px;text-decoration:none;white-space:nowrap;}
+.back-btn:hover{background:rgba(255,255,255,.15);}
+.wrap{max-width:1400px;margin:0 auto;padding:18px 16px;}
+.tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.tab-btn{padding:8px 20px;border-radius:20px;border:2px solid #ddd;background:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;}
+.tab-btn.active{background:#40916c;color:#fff;border-color:#40916c;}
+.controls{background:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.controls select,.controls input[type=text]{padding:7px 10px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;cursor:pointer;background:#fff;}
+.controls select:focus,.controls input:focus{outline:none;border-color:#40916c;}
+.dl-btn{padding:7px 14px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;}
+.dl-csv{background:#e8f5e9;color:#1b4332;}
+.dl-xlsx{background:#e3f2fd;color:#1565c0;}
+.dl-btn:hover{filter:brightness(.94);}
+.count-badge{margin-left:auto;font-size:12px;color:#888;}
+.table-wrap{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);overflow:auto;max-height:68vh;}
+table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap;}
+th{background:#f0f7f4;padding:8px 10px;text-align:left;font-size:11px;color:#444;border-bottom:2px solid #dde9e5;position:sticky;top:0;z-index:1;}
+td{padding:7px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+tr:hover td{background:#f9fdf9;}
+.tag{display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;}
+.t-otuk{background:#ff6b35;color:#fff;}
+.t-yes{background:#e8f5e9;color:#2e7d32;}
+.t-no{background:#f5f5f5;color:#bbb;}
+.no-data{padding:40px;text-align:center;color:#bbb;font-size:13px;}
+@media(max-width:768px){.controls{flex-direction:column;align-items:stretch;}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>📦 Raw 데이터 다운로드</h1>
+    <p>기준: ${latestDate} &nbsp;|&nbsp; 스냅샷 ${snapCountLabel}행 &nbsp;|&nbsp; 변동 ${chgCountLabel}행</p>
+  </div>
+  <a href="index.html" class="back-btn">← 대시보드</a>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('snapshots',this)">📋 Raw Snapshots (${snapCountLabel}행)</button>
+    <button class="tab-btn" onclick="switchTab('changes',this)">📈 Daily Changes (${chgCountLabel}행)</button>
+    <button class="tab-btn" onclick="switchTab('otuk',this)">🔥 오특 상품만</button>
+  </div>
+
+  <div class="controls" id="ctrl-snapshots">
+    <select id="snap-date" onchange="renderTable()"><option value="">모든 날짜</option>${dateOptions}</select>
+    <select id="snap-cat" onchange="renderTable()"><option value="">모든 카테고리</option>${catOptions}</select>
+    <input id="snap-q" type="text" placeholder="브랜드 / 상품명 검색..." oninput="renderTable()" style="min-width:180px;">
+    <span class="count-badge" id="snap-count"></span>
+    <button class="dl-btn dl-csv" onclick="downloadCSV('snapshots')">📥 CSV</button>
+    <button class="dl-btn dl-xlsx" onclick="downloadExcel('snapshots')">📊 Excel</button>
+  </div>
+  <div class="controls" id="ctrl-changes" style="display:none;">
+    <select id="chg-date" onchange="renderTable()"><option value="">모든 날짜</option>${dateOptions}</select>
+    <input id="chg-q" type="text" placeholder="브랜드 검색..." oninput="renderTable()" style="min-width:180px;">
+    <span class="count-badge" id="chg-count"></span>
+    <button class="dl-btn dl-csv" onclick="downloadCSV('changes')">📥 CSV</button>
+    <button class="dl-btn dl-xlsx" onclick="downloadExcel('changes')">📊 Excel</button>
+  </div>
+  <div class="controls" id="ctrl-otuk" style="display:none;">
+    <select id="otuk-cat" onchange="renderTable()"><option value="">모든 카테고리</option>${catOptions}</select>
+    <span class="count-badge" id="otuk-count"></span>
+    <button class="dl-btn dl-csv" onclick="downloadCSV('otuk')">📥 CSV</button>
+    <button class="dl-btn dl-xlsx" onclick="downloadExcel('otuk')">📊 Excel</button>
+  </div>
+
+  <div class="table-wrap" id="table-area"><p class="no-data">로딩 중...</p></div>
+</div>
+
+<script>
+const SNAPS   = ${JSON.stringify(snaps)};
+const CHANGES = ${JSON.stringify(changes)};
+const CAT_LABELS = { skincare:'스킨케어', bodycare:'바디케어' };
+
+const SNAP_COLS = [
+  {k:'snapshot_date',l:'날짜'},{k:'category',l:'카테고리'},{k:'rank',l:'순위'},
+  {k:'brand_name_raw',l:'브랜드'},{k:'product_name_raw',l:'상품명'},
+  {k:'list_price',l:'정가'},{k:'sale_price',l:'판매가'},
+  {k:'price_discount_amount',l:'할인액'},{k:'price_discount_rate',l:'할인율'},
+  {k:'badges',l:'배지'},{k:'has_otuk',l:'오특여부'},{k:'is_sold_out',l:'품절'},
+  {k:'product_url',l:'상품URL'},
+];
+const CHG_COLS = [
+  {k:'snapshot_date',l:'날짜'},{k:'brand_key',l:'브랜드키'},
+  {k:'today_rank',l:'오늘순위'},{k:'yesterday_rank',l:'전일순위'},{k:'rank_change',l:'순위변동'},
+  {k:'today_sale_price',l:'오늘가격'},{k:'yesterday_sale_price',l:'전일가격'},
+  {k:'price_change',l:'변동액'},{k:'price_change_rate',l:'변동률'},
+  {k:'is_new_entry',l:'신규진입'},{k:'is_reentry',l:'재진입'},{k:'is_price_changed',l:'가격변동'},
+];
+
+let currentTab = 'snapshots';
+
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('ctrl-snapshots').style.display = tab==='snapshots' ? '' : 'none';
+  document.getElementById('ctrl-changes').style.display   = tab==='changes'   ? '' : 'none';
+  document.getElementById('ctrl-otuk').style.display      = tab==='otuk'      ? '' : 'none';
+  renderTable();
+}
+
+function boolVal(v) { return v === true || v === 'true'; }
+
+function getFiltered() {
+  if (currentTab === 'snapshots') {
+    const date = document.getElementById('snap-date').value;
+    const cat  = document.getElementById('snap-cat').value;
+    const q    = document.getElementById('snap-q').value.toLowerCase();
+    return SNAPS.filter(r =>
+      (!date || r.snapshot_date === date) &&
+      (!cat  || r.category === cat) &&
+      (!q    || (r.brand_name_raw||'').toLowerCase().includes(q) || (r.product_name_raw||'').toLowerCase().includes(q))
+    );
+  } else if (currentTab === 'changes') {
+    const date = document.getElementById('chg-date').value;
+    const q    = document.getElementById('chg-q').value.toLowerCase();
+    return CHANGES.filter(r =>
+      (!date || r.snapshot_date === date) &&
+      (!q    || (r.brand_key||'').toLowerCase().includes(q))
+    );
+  } else {
+    const cat = document.getElementById('otuk-cat').value;
+    return SNAPS.filter(r =>
+      boolVal(r.has_otuk) && (!cat || r.category === cat)
+    ).sort((a,b) => a.snapshot_date < b.snapshot_date ? 1 : a.snapshot_date > b.snapshot_date ? -1 : +a.rank - +b.rank);
+  }
+}
+
+function getCols() { return currentTab === 'changes' ? CHG_COLS : SNAP_COLS; }
+
+function fmtCell(k, v) {
+  if (v === null || v === undefined) return '—';
+  const boolKeys = ['has_otuk','is_sold_out','is_new_entry','is_reentry','is_price_changed'];
+  if (boolKeys.includes(k)) {
+    const yes = boolVal(v);
+    if (k==='has_otuk' && yes) return '<span class="tag t-otuk">오특</span>';
+    return '<span class="tag '+(yes?'t-yes':'t-no')+'">'+(yes?'예':'—')+'</span>';
+  }
+  if (['sale_price','list_price','today_sale_price','yesterday_sale_price'].includes(k))
+    return v ? (+v).toLocaleString()+'원' : '—';
+  if (['price_discount_rate','price_change_rate'].includes(k))
+    return v ? Math.round(+v*100)+'%' : '—';
+  if (['price_change','price_discount_amount'].includes(k)) {
+    if (!v && v!==0) return '—';
+    const n=+v; return (n>0?'+':'')+n.toLocaleString()+'원';
+  }
+  if (k==='rank_change') {
+    if (v===null||v==='') return '—';
+    const n=+v;
+    const col=n>0?'style="color:#e74c3c;font-weight:700"':n<0?'style="color:#3498db;font-weight:700"':'';
+    return '<span '+col+'>'+(n>0?'▲':n<0?'▼':'—')+' '+Math.abs(n)+'</span>';
+  }
+  if (k==='product_url') return v?'<a href="'+v+'" target="_blank" style="color:#40916c;">링크</a>':'—';
+  if (k==='category') return CAT_LABELS[v]||v;
+  return String(v);
+}
+
+function renderTable() {
+  const rows = getFiltered();
+  const cols = getCols();
+  const countId = {snapshots:'snap-count',changes:'chg-count',otuk:'otuk-count'}[currentTab];
+  document.getElementById(countId).textContent = rows.length.toLocaleString()+'행';
+
+  if (rows.length === 0) {
+    document.getElementById('table-area').innerHTML = '<p class="no-data">데이터가 없습니다.</p>';
+    return;
+  }
+  const thead = '<thead><tr>'+cols.map(c=>'<th>'+c.l+'</th>').join('')+'</tr></thead>';
+  const tbody = '<tbody>'+rows.map(r=>
+    '<tr>'+cols.map(c=>'<td>'+fmtCell(c.k,r[c.k])+'</td>').join('')+'</tr>'
+  ).join('')+'</tbody>';
+  document.getElementById('table-area').innerHTML = '<table>'+thead+tbody+'</table>';
+}
+
+function toCSVStr(rows, cols) {
+  const h = cols.map(c=>'"'+c.l+'"').join(',');
+  const b = rows.map(r=>cols.map(c=>{
+    const v=r[c.k]; if(v===null||v===undefined) return '';
+    return '"'+String(v).replace(/"/g,'""')+'"';
+  }).join(',')).join('\\n');
+  return h+'\\n'+b;
+}
+
+function downloadCSV(tab) {
+  const old = currentTab; currentTab = tab;
+  const rows = getFiltered(); currentTab = old;
+  const cols = tab==='changes' ? CHG_COLS : SNAP_COLS;
+  const csv  = toCSVStr(rows, cols);
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'),{href:url,download:'oliveyoung_'+tab+'_'+new Date().toISOString().slice(0,10)+'.csv'});
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function downloadExcel(tab) {
+  const old = currentTab; currentTab = tab;
+  const rows = getFiltered(); currentTab = old;
+  const cols = tab==='changes' ? CHG_COLS : SNAP_COLS;
+  const data = [cols.map(c=>c.l)].concat(rows.map(r=>cols.map(c=>{
+    const v=r[c.k];
+    if(v===null||v===undefined) return '';
+    if(typeof v==='boolean') return v?'예':'아니오';
+    return v;
+  })));
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  // 컬럼 너비 자동 설정
+  ws['!cols'] = cols.map(c=>({wch: Math.max(c.l.length*2, 12)}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, tab);
+  XLSX.writeFile(wb, 'oliveyoung_'+tab+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+renderTable();
+<\/script>
 </body>
 </html>`;
 }
