@@ -60,15 +60,21 @@ async function generateReport() {
 
   // ── 오늘 변동 데이터 (카테고리 구분용) ───────────────────────────
   // raw_snapshots에 product_key 컬럼이 없으므로, brand_name_raw+product_name_raw로 재계산해 매핑
-  const keyToCategory = {};
+  const keyToCategory    = {};
+  const keyToProductName = {};
+  const keyToBrandName   = {};
   snaps.forEach(s => {
     const k = makeProductKey(s.brand_name_raw, s.product_name_raw);
-    keyToCategory[k] = s.category;
+    keyToCategory[k]    = s.category;
+    keyToProductName[k] = s.product_name_raw;
+    keyToBrandName[k]   = s.brand_name_raw;
   });
 
   const todayChanges = changes.filter(c => c.snapshot_date === latestDate);
   todayChanges.forEach(c => {
-    c._category = keyToCategory[c.product_key] || 'unknown';
+    c._category     = keyToCategory[c.product_key]    || 'unknown';
+    c._product_name = keyToProductName[c.product_key] || '';
+    c._brand_name   = keyToBrandName[c.product_key]   || c.brand_key;
   });
 
   // ── 브랜드 진입 / 이탈 이력 ──────────────────────────────────────
@@ -332,10 +338,18 @@ tr:hover td{background:#f9fdf9;}
         <h2>🔄 ${catLabels[cat]||cat} 순위 변동</h2>
         ${risers.length === 0 && fallers.length === 0
           ? '<p class="no-data">전일 데이터가 쌓이면 표시됩니다.</p>'
-          : `<table><thead><tr><th>브랜드</th><th>오늘</th><th>전일</th><th>변동</th></tr></thead><tbody>
-            ${risers.map(r=>`<tr><td>${r.brand_key}</td><td>${r.today_rank}위</td><td>${r.yesterday_rank}위</td><td class="up">▲ ${r.rank_change}</td></tr>`).join('')}
-            ${fallers.map(r=>`<tr><td>${r.brand_key}</td><td>${r.today_rank}위</td><td>${r.yesterday_rank}위</td><td class="dn">▼ ${Math.abs(+r.rank_change)}</td></tr>`).join('')}
-          </tbody></table>`
+          : `<div style="overflow-x:auto;"><table><thead><tr><th>브랜드</th><th>상품명</th><th>오늘</th><th>전일</th><th>변동</th></tr></thead><tbody>
+            ${risers.map(r=>`<tr>
+              <td><a href="#" onclick="selectBrand('${cat}','${(r._brand_name||r.brand_key).replace(/'/g,"\\'")}');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">${r._brand_name||r.brand_key}</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="${(r._product_name||'').replace(/"/g,'&quot;')}">${r._product_name||'-'}</td>
+              <td>${r.today_rank}위</td><td>${r.yesterday_rank}위</td><td class="up">▲ ${r.rank_change}</td>
+            </tr>`).join('')}
+            ${fallers.map(r=>`<tr>
+              <td><a href="#" onclick="selectBrand('${cat}','${(r._brand_name||r.brand_key).replace(/'/g,"\\'")}');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">${r._brand_name||r.brand_key}</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="${(r._product_name||'').replace(/"/g,'&quot;')}">${r._product_name||'-'}</td>
+              <td>${r.today_rank}위</td><td>${r.yesterday_rank}위</td><td class="dn">▼ ${Math.abs(+r.rank_change)}</td>
+            </tr>`).join('')}
+          </tbody></table></div>`
         }
         ${(() => {
           const mv = brandMovements[cat]?.[latestDate];
