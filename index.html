@@ -60,12 +60,21 @@ tr:hover td{background:#f9fdf9;}
 .t-other{background:#e8eaf6;color:#3949ab;}
 .price-dn{color:#e74c3c;}.price-up{color:#3498db;}
 .otuk-dot{display:inline-block;width:8px;height:8px;background:#ff6b35;border-radius:50%;margin-right:4px;}
+.t-first{background:#e3f2fd;color:#1565c0;font-weight:700;}
+.t-exit{background:#fce4ec;color:#c62828;}
 
 /* 브랜드 분석 */
 .brand-select-area{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
 .brand-select-area select{padding:8px 12px;border-radius:8px;border:1.5px solid #ddd;
   font-size:13px;min-width:200px;cursor:pointer;}
 .brand-select-area select:focus{outline:none;border-color:#40916c;}
+.brand-search-wrap{position:relative;min-width:220px;}
+.brand-search-wrap input{width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;background:#fff;}
+.brand-search-wrap input:focus{outline:none;border-color:#40916c;box-shadow:0 0 0 3px rgba(64,145,108,.1);}
+.brand-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid #40916c;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;z-index:200;}
+.bdi{padding:8px 12px;font-size:13px;cursor:pointer;}
+.bdi:hover,.bdi.kbd-focus{background:#f0f7f4;color:#1b4332;font-weight:600;}
+.bdi-empty{padding:12px;font-size:12px;color:#aaa;text-align:center;}
 .brand-detail{display:none;}
 .brand-detail.show{display:block;}
 .chart-wrap{height:260px;position:relative;}
@@ -217,10 +226,51 @@ tr:hover td{background:#f9fdf9;}
 
       <div class="card">
         <h2>🔄 바디케어 순위 변동</h2>
-        <table><thead><tr><th>브랜드</th><th>오늘</th><th>전일</th><th>변동</th></tr></thead><tbody>
-            <tr><td>우르오스</td><td>7위</td><td>65위</td><td class="up">▲ 58</td></tr><tr><td>해피바스</td><td>17위</td><td>70위</td><td class="up">▲ 53</td></tr><tr><td>일리윤</td><td>42위</td><td>82위</td><td class="up">▲ 40</td></tr><tr><td>존슨즈</td><td>48위</td><td>84위</td><td class="up">▲ 36</td></tr><tr><td>더마비</td><td>60위</td><td>87위</td><td class="up">▲ 27</td></tr>
-            <tr><td>벨먼</td><td>97위</td><td>17위</td><td class="dn">▼ 80</td></tr><tr><td>혼바디</td><td>79위</td><td>20위</td><td class="dn">▼ 59</td></tr><tr><td>스킨유</td><td>92위</td><td>47위</td><td class="dn">▼ 45</td></tr><tr><td>라로슈포제</td><td>81위</td><td>46위</td><td class="dn">▼ 35</td></tr><tr><td>온더바디</td><td>74위</td><td>41위</td><td class="dn">▼ 33</td></tr>
-          </tbody></table>
+        <div style="overflow-x:auto;"><table><thead><tr><th>브랜드</th><th>상품명</th><th>오늘</th><th>전일</th><th>변동</th></tr></thead><tbody>
+            <tr>
+              <td><a href="#" onclick="selectBrand('bodycare','우르오스');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">우르오스</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[맨즈케어 바디워시 1위] 우르오스 스킨워시 500ml">[맨즈케어 바디워시 1위] 우르오스 스킨워시 500ml</td>
+              <td>7위</td><td>65위</td><td class="up">▲ 58</td>
+            </tr><tr>
+              <td><a href="#" onclick="selectBrand('bodycare','해피바스');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">해피바스</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[괄사기획]해피바스 달잠 밀키라벤더 3종택1(워시/로션/미스트)">[괄사기획]해피바스 달잠 밀키라벤더 3종택1(워시/로션/미스트)</td>
+              <td>17위</td><td>70위</td><td class="up">▲ 53</td>
+            </tr><tr>
+              <td><a href="#" onclick="selectBrand('bodycare','일리윤');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">일리윤</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4월올영픽]일리윤 세라마이드 아토6.0 탑투토워시 몬치치 에디션(500ml+500ml리필+한정굿즈 기획)">[4월올영픽]일리윤 세라마이드 아토6.0 탑투토워시 몬치치 에디션(500ml+500ml리필+한정굿즈 기획)</td>
+              <td>42위</td><td>82위</td><td class="up">▲ 40</td>
+            </tr><tr>
+              <td><a href="#" onclick="selectBrand('bodycare','존슨즈');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">존슨즈</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[NEW] 존슨즈 뷰티 로션 500ml 더블기획 골라담기 (청순형광등/물먹복숭아/속광로즈)">[NEW] 존슨즈 뷰티 로션 500ml 더블기획 골라담기 (청순형광등/물먹복숭아/속광로즈)</td>
+              <td>48위</td><td>84위</td><td class="up">▲ 36</td>
+            </tr><tr>
+              <td><a href="#" onclick="selectBrand('bodycare','더마비');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">더마비</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[단독/대용량] 더마비 데일리 모이스처 바디로션 860ml">[단독/대용량] 더마비 데일리 모이스처 바디로션 860ml</td>
+              <td>60위</td><td>87위</td><td class="up">▲ 27</td>
+            </tr>
+            <tr>
+              <td><a href="#" onclick="selectBrand('bodycare','벨먼');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">벨먼</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4월 올영픽] 벨먼x뵈르뵈르 내추럴 스파 고보습 크리미 바닐라 머스크 스크럽워시 400ml(+컵괄사 기획)">[4월 올영픽] 벨먼x뵈르뵈르 내추럴 스파 고보습 크리미 바닐라 머스크 스크럽워시 400ml(+컵괄사 기획)</td>
+              <td>97위</td><td>17위</td><td class="dn">▼ 80</td>
+            </tr><tr>
+              <td><a href="#" onclick="selectBrand('bodycare','혼바디');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">혼바디</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[부스터젤 증정] 혼바디 PICK 뉴트럴 바디트리머">[부스터젤 증정] 혼바디 PICK 뉴트럴 바디트리머</td>
+              <td>79위</td><td>20위</td><td class="dn">▼ 59</td>
+            </tr><tr>
+              <td><a href="#" onclick="selectBrand('bodycare','스킨유');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">스킨유</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4월올영픽/펌프형/자외선차단] 스킨유 이노센트 딥머스크 핸드크림 SPF35 PA++ 50ML">[4월올영픽/펌프형/자외선차단] 스킨유 이노센트 딥머스크 핸드크림 SPF35 PA++ 50ML</td>
+              <td>92위</td><td>47위</td><td class="dn">▼ 45</td>
+            </tr><tr>
+              <td><a href="#" onclick="selectBrand('bodycare','라로슈포제');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">라로슈포제</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="라로슈포제 에빠끌라 퓨리파잉 포밍 젤 400ml">라로슈포제 에빠끌라 퓨리파잉 포밍 젤 400ml</td>
+              <td>81위</td><td>46위</td><td class="dn">▼ 35</td>
+            </tr><tr>
+              <td><a href="#" onclick="selectBrand('bodycare','온더바디');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">온더바디</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="온더바디 발을씻자 코튼 풋샴푸 385ml 레몬/자몽/복숭아/쿨링/비누향 5종 택1">온더바디 발을씻자 코튼 풋샴푸 385ml 레몬/자몽/복숭아/쿨링/비누향 5종 택1</td>
+              <td>74위</td><td>41위</td><td class="dn">▼ 33</td>
+            </tr>
+          </tbody></table></div>
+        <p style="font-size:12px;font-weight:700;color:#1565c0;margin:12px 0 6px;">🆕 오늘 신규 진입</p><table><thead><tr><th>브랜드</th><th>순위</th></tr></thead><tbody><tr><td><span class="tag t-first">★ 첫등장</span> <strong>쿤달</strong></td><td>35위</td></tr><tr><td><strong>포맨트</strong></td><td>44위</td></tr><tr><td><strong>나인위시스</strong></td><td>50위</td></tr><tr><td><strong>럽센트</strong></td><td>59위</td></tr><tr><td><strong>오브제</strong></td><td>61위</td></tr><tr><td><strong>필립스</strong></td><td>68위</td></tr><tr><td><strong>네어</strong></td><td>77위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>힐그리즈</strong></td><td>78위</td></tr><tr><td><strong>바렌</strong></td><td>80위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>파넬</strong></td><td>88위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>디어도어</strong></td><td>90위</td></tr><tr><td><strong>비오템</strong></td><td>95위</td></tr></tbody></table><p style="font-size:12px;font-weight:700;color:#c62828;margin:12px 0 6px;">👋 오늘 이탈</p><table><thead><tr><th>브랜드</th><th>전일 순위</th></tr></thead><tbody><tr><td>플루</td><td style="color:#999;">4위 → 이탈</td></tr><tr><td>록시땅</td><td style="color:#999;">52위 → 이탈</td></tr><tr><td>라운드어라운드</td><td style="color:#999;">58위 → 이탈</td></tr><tr><td>유세린</td><td style="color:#999;">60위 → 이탈</td></tr><tr><td>씨퓨리</td><td style="color:#999;">72위 → 이탈</td></tr><tr><td>델링그</td><td style="color:#999;">75위 → 이탈</td></tr><tr><td>밀크바오밥</td><td style="color:#999;">79위 → 이탈</td></tr><tr><td>아로마티카</td><td style="color:#999;">91위 → 이탈</td></tr><tr><td>지저쓰</td><td style="color:#999;">94위 → 이탈</td></tr><tr><td>멈칫</td><td style="color:#999;">97위 → 이탈</td></tr></tbody></table>
       </div>
     </div><div class="grid2 cat-section" data-cat="skincare">
       <div class="card">
@@ -312,10 +362,51 @@ tr:hover td{background:#f9fdf9;}
 
       <div class="card">
         <h2>🔄 스킨케어 순위 변동</h2>
-        <table><thead><tr><th>브랜드</th><th>오늘</th><th>전일</th><th>변동</th></tr></thead><tbody>
-            <tr><td>코스노리</td><td>17위</td><td>89위</td><td class="up">▲ 72</td></tr><tr><td>스킨앤랩</td><td>7위</td><td>61위</td><td class="up">▲ 54</td></tr><tr><td>바이오더마</td><td>1위</td><td>52위</td><td class="up">▲ 51</td></tr><tr><td>넘버즈인</td><td>42위</td><td>80위</td><td class="up">▲ 38</td></tr><tr><td>썸바이미</td><td>49위</td><td>83위</td><td class="up">▲ 34</td></tr>
-            <tr><td>피지오겔</td><td>82위</td><td>40위</td><td class="dn">▼ 42</td></tr><tr><td>풀리</td><td>85위</td><td>43위</td><td class="dn">▼ 42</td></tr><tr><td>아이디얼포맨</td><td>80위</td><td>45위</td><td class="dn">▼ 35</td></tr><tr><td>라네즈</td><td>40위</td><td>8위</td><td class="dn">▼ 32</td></tr><tr><td>라네즈</td><td>76위</td><td>44위</td><td class="dn">▼ 32</td></tr>
-          </tbody></table>
+        <div style="overflow-x:auto;"><table><thead><tr><th>브랜드</th><th>상품명</th><th>오늘</th><th>전일</th><th>변동</th></tr></thead><tbody>
+            <tr>
+              <td><a href="#" onclick="selectBrand('skincare','코스노리');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">코스노리</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[NEW/화잘먹토너] 코스노리 판테놀 베리어 토너 205ml">[NEW/화잘먹토너] 코스노리 판테놀 베리어 토너 205ml</td>
+              <td>17위</td><td>89위</td><td class="up">▲ 72</td>
+            </tr><tr>
+              <td><a href="#" onclick="selectBrand('skincare','스킨앤랩');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">스킨앤랩</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[NEW/투명케어] 스킨앤랩 글루타치온 앰플 토너 200ml">[NEW/투명케어] 스킨앤랩 글루타치온 앰플 토너 200ml</td>
+              <td>7위</td><td>61위</td><td class="up">▲ 54</td>
+            </tr><tr>
+              <td><a href="#" onclick="selectBrand('skincare','바이오더마');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">바이오더마</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="바이오더마 하이드라비오 토너 500ml 기획 (+거품 용기)">바이오더마 하이드라비오 토너 500ml 기획 (+거품 용기)</td>
+              <td>1위</td><td>52위</td><td class="up">▲ 51</td>
+            </tr><tr>
+              <td><a href="#" onclick="selectBrand('skincare','넘버즈인');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">넘버즈인</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[흔적미백] 넘버즈인 5번 글루타치온씨 비타수액 에센셜 토너 200ml 리필 기획(+200ml 리필)">[흔적미백] 넘버즈인 5번 글루타치온씨 비타수액 에센셜 토너 200ml 리필 기획(+200ml 리필)</td>
+              <td>42위</td><td>80위</td><td class="up">▲ 38</td>
+            </tr><tr>
+              <td><a href="#" onclick="selectBrand('skincare','썸바이미');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">썸바이미</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="썸바이미 아하바하파하 30 데이즈 미라클 토너 150ml">썸바이미 아하바하파하 30 데이즈 미라클 토너 150ml</td>
+              <td>49위</td><td>83위</td><td class="up">▲ 34</td>
+            </tr>
+            <tr>
+              <td><a href="#" onclick="selectBrand('skincare','피지오겔');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">피지오겔</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="피지오겔 레드수딩 시카밸런스 토너 200ml">피지오겔 레드수딩 시카밸런스 토너 200ml</td>
+              <td>82위</td><td>40위</td><td class="dn">▼ 42</td>
+            </tr><tr>
+              <td><a href="#" onclick="selectBrand('skincare','풀리');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">풀리</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[레이PICK/보습광채] 풀리 쌀 세라 에센스 토너 250ml">[레이PICK/보습광채] 풀리 쌀 세라 에센스 토너 250ml</td>
+              <td>85위</td><td>43위</td><td class="dn">▼ 42</td>
+            </tr><tr>
+              <td><a href="#" onclick="selectBrand('skincare','아이디얼포맨');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">아이디얼포맨</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="아이디얼포맨 파워쿨링 애프터 쉐이브 2종 세트">아이디얼포맨 파워쿨링 애프터 쉐이브 2종 세트</td>
+              <td>80위</td><td>45위</td><td class="dn">▼ 35</td>
+            </tr><tr>
+              <td><a href="#" onclick="selectBrand('skincare','라네즈');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">라네즈</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[화잘먹] 라네즈 크림스킨 170ml 리필기획 (+170ml 리필+미스트 펌프+50ml)">[화잘먹] 라네즈 크림스킨 170ml 리필기획 (+170ml 리필+미스트 펌프+50ml)</td>
+              <td>40위</td><td>8위</td><td class="dn">▼ 32</td>
+            </tr><tr>
+              <td><a href="#" onclick="selectBrand('skincare','라네즈');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">라네즈</a></td>
+              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="라네즈 워터뱅크 블루히알루로닉 기초 2종(중건성)">라네즈 워터뱅크 블루히알루로닉 기초 2종(중건성)</td>
+              <td>76위</td><td>44위</td><td class="dn">▼ 32</td>
+            </tr>
+          </tbody></table></div>
+        <p style="font-size:12px;font-weight:700;color:#1565c0;margin:12px 0 6px;">🆕 오늘 신규 진입</p><table><thead><tr><th>브랜드</th><th>순위</th></tr></thead><tbody><tr><td><strong>랑콤</strong></td><td>37위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>유세린</strong></td><td>55위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>피캄</strong></td><td>60위</td></tr><tr><td><strong>아벤느</strong></td><td>72위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>닥터디퍼런트</strong></td><td>73위</td></tr><tr><td><strong>차앤박</strong></td><td>84위</td></tr><tr><td><strong>성분에디터</strong></td><td>86위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>아이오페</strong></td><td>89위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>믹순</strong></td><td>91위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>바버501</strong></td><td>94위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>라끄베르</strong></td><td>95위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>연작</strong></td><td>98위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>닥터하스킨</strong></td><td>100위</td></tr></tbody></table><p style="font-size:12px;font-weight:700;color:#c62828;margin:12px 0 6px;">👋 오늘 이탈</p><table><thead><tr><th>브랜드</th><th>전일 순위</th></tr></thead><tbody><tr><td>가쉬</td><td style="color:#999;">36위 → 이탈</td></tr><tr><td>조선미녀</td><td style="color:#999;">46위 → 이탈</td></tr><tr><td>어나더페이스</td><td style="color:#999;">54위 → 이탈</td></tr><tr><td>제나벨</td><td style="color:#999;">68위 → 이탈</td></tr><tr><td>구달</td><td style="color:#999;">81위 → 이탈</td></tr><tr><td>크리니크</td><td style="color:#999;">85위 → 이탈</td></tr><tr><td>헤라</td><td style="color:#999;">91위 → 이탈</td></tr><tr><td>엠도씨</td><td style="color:#999;">93위 → 이탈</td></tr><tr><td>원씽</td><td style="color:#999;">95위 → 이탈</td></tr><tr><td>하다라보</td><td style="color:#999;">100위 → 이탈</td></tr></tbody></table>
       </div>
     </div>
 
@@ -377,9 +468,11 @@ tr:hover td{background:#f9fdf9;}
         <option value="bodycare">바디케어</option><option value="skincare">스킨케어</option>
       </select>
       <span style="font-size:13px;font-weight:600;color:#555;">브랜드</span>
-      <select id="brand-sel" onchange="showBrandDetail()">
-        <option value="">브랜드를 선택하세요</option>
-      </select>
+      <div class="brand-search-wrap" id="brand-search-wrap">
+        <input id="brand-search-input" type="text" placeholder="브랜드 검색 또는 선택..." autocomplete="off"
+          oninput="filterBrandList()" onfocus="openBrandDropdown()" onkeydown="brandKeyNav(event)">
+        <div id="brand-dropdown" class="brand-dropdown" style="display:none;"></div>
+      </div>
     </div>
 
     <div id="brand-detail" class="brand-detail">
@@ -792,7 +885,18 @@ tr:hover td{background:#f9fdf9;}
   <!-- 오특 이력 -->
   <div class="card full">
     <h2>🔥 오특 진행 이력 — 상품별 가격 변동</h2>
-    <p style="font-weight:700;color:#1b4332;margin:0 0 12px;">바디케어</p><details style="margin-bottom:10px;" open><summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span>📅 2026-04-14&nbsp;&nbsp;🔥 오특 진행</span><span style="font-size:12px;font-weight:400;color:#999;">1개 상품 ▾</span></summary><div style="overflow-x:auto;margin-top:8px;"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>전날 (2026-04-13)</th><th>오특 당일 (2026-04-14)</th><th>다음날 (2026-04-15)</th><th>전날比 변동</th></tr></thead><tbody><tr><td><span class="rb rn">17</span></td><td>벨먼</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4월 올영픽] 벨먼x뵈르뵈르 내추럴 스파 고보습 크리미 바닐라 머스크 스크럽워시 400ml(+컵괄사 기획)">[4월 올영픽] 벨먼x뵈르뵈르 내추럴 스파 고보습 크리미 바닐라 머스크 스크럽워시 400ml(+컵괄사 기획)</td><td>—</td><td style="font-weight:700;">11,700원&nbsp;<span class="tag t-otuk">오특</span></td><td>12,900원</td><td class="">-</td></tr></tbody></table></div></details><details style="margin-bottom:10px;" ><summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span>📅 2026-04-13&nbsp;&nbsp;🔥 오특 진행</span><span style="font-size:12px;font-weight:400;color:#999;">1개 상품 ▾</span></summary><div style="overflow-x:auto;margin-top:8px;"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>전날 (2026-04-12)</th><th>오특 당일 (2026-04-13)</th><th>다음날 (2026-04-14)</th><th>전날比 변동</th></tr></thead><tbody><tr><td><span class="rb r1">1</span></td><td>존슨즈</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4/13 하루특가] 존슨즈 뷰티 로션 500ml 3종 택 1 (청순형광등/물먹복숭아/속광로즈)">[4/13 하루특가] 존슨즈 뷰티 로션 500ml 3종 택 1 (청순형광등/물먹복숭아/속광로즈)</td><td>—</td><td style="font-weight:700;">11,450원&nbsp;<span class="tag t-otuk">오특</span></td><td>—</td><td class="">-</td></tr></tbody></table></div></details><details style="margin-bottom:10px;" ><summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span>📅 2026-04-12&nbsp;&nbsp;🔥 오특 진행</span><span style="font-size:12px;font-weight:400;color:#999;">5개 상품 ▾</span></summary><div style="overflow-x:auto;margin-top:8px;"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>전날 (—)</th><th>오특 당일 (2026-04-12)</th><th>다음날 (2026-04-13)</th><th>전날比 변동</th></tr></thead><tbody><tr><td><span class="rb r1">1</span></td><td>일리윤</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4/12 하루특가] 일리윤 세라마이드 아토 로션 몬치치 한정에디션(600ml+한정 굿즈 기획)">[4/12 하루특가] 일리윤 세라마이드 아토 로션 몬치치 한정에디션(600ml+한정 굿즈 기획)</td><td>(데이터없음)</td><td style="font-weight:700;">20,900원&nbsp;<span class="tag t-otuk">오특</span></td><td>—</td><td class="">-</td></tr><tr><td><span class="rb r2">2</span></td><td>일리윤</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4월올영픽]일리윤 세라마이드아토 집중크림 몬치치 한정에디션(150ml*2+한정굿즈 기획)">[4월올영픽]일리윤 세라마이드아토 집중크림 몬치치 한정에디션(150ml*2+한정굿즈 기획)</td><td>(데이터없음)</td><td style="font-weight:700;">16,400원&nbsp;<span class="tag t-otuk">오특</span></td><td>18,900원</td><td class="">-</td></tr><tr><td><span class="rb r3">3</span></td><td>일리윤</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4월올영픽]일리윤 프레쉬모이스춰 스크럽워시 몬치치 한정에디션(400ml*2+한정굿즈 기획)">[4월올영픽]일리윤 프레쉬모이스춰 스크럽워시 몬치치 한정에디션(400ml*2+한정굿즈 기획)</td><td>(데이터없음)</td><td style="font-weight:700;">15,900원&nbsp;<span class="tag t-otuk">오특</span></td><td>16,400원</td><td class="">-</td></tr><tr><td><span class="rb rn">5</span></td><td>럽센트</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[NEW] 럽센트 생화향 스크럽 워시 500ml 4종">[NEW] 럽센트 생화향 스크럽 워시 500ml 4종</td><td>(데이터없음)</td><td style="font-weight:700;">9,900원&nbsp;<span class="tag t-otuk">오특</span></td><td>—</td><td class="">-</td></tr><tr><td><span class="rb rn">16</span></td><td>일리윤</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4월올영픽]일리윤 세라마이드 아토6.0 탑투토워시 몬치치 에디션(500ml+500ml리필+한정굿즈 기획)">[4월올영픽]일리윤 세라마이드 아토6.0 탑투토워시 몬치치 에디션(500ml+500ml리필+한정굿즈 기획)</td><td>(데이터없음)</td><td style="font-weight:700;">14,400원&nbsp;<span class="tag t-otuk">오특</span></td><td>14,900원</td><td class="">-</td></tr></tbody></table></div></details><p style="font-weight:700;color:#1b4332;margin:0 0 12px;">스킨케어</p><details style="margin-bottom:10px;" open><summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span>📅 2026-04-15&nbsp;&nbsp;🔥 오특 진행</span><span style="font-size:12px;font-weight:400;color:#999;">1개 상품 ▾</span></summary><div style="overflow-x:auto;margin-top:8px;"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>전날 (2026-04-14)</th><th>오특 당일 (2026-04-15)</th><th>다음날 (—)</th><th>전날比 변동</th></tr></thead><tbody><tr><td><span class="rb r2">2</span></td><td>랩시리즈</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="랩시리즈 데일리 레스큐 워터로션 200ml 단품/기획 (+30ml*2 추가증정)">랩시리즈 데일리 레스큐 워터로션 200ml 단품/기획 (+30ml*2 추가증정)</td><td>52,700원</td><td style="font-weight:700;">46,500원&nbsp;<span class="tag t-otuk">오특</span></td><td>(최신)</td><td class="price-dn">-6,200원</td></tr></tbody></table></div></details><details style="margin-bottom:10px;" ><summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span>📅 2026-04-14&nbsp;&nbsp;🔥 오특 진행</span><span style="font-size:12px;font-weight:400;color:#999;">1개 상품 ▾</span></summary><div style="overflow-x:auto;margin-top:8px;"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>전날 (2026-04-13)</th><th>오특 당일 (2026-04-14)</th><th>다음날 (2026-04-15)</th><th>전날比 변동</th></tr></thead><tbody><tr><td><span class="rb rn">5</span></td><td>브링그린</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[안경만두콜라보] 브링그린 티트리 시카 수딩 토너 (콜라보/500ml/250ml)">[안경만두콜라보] 브링그린 티트리 시카 수딩 토너 (콜라보/500ml/250ml)</td><td>18,900원</td><td style="font-weight:700;">17,900원&nbsp;<span class="tag t-otuk">오특</span></td><td>—</td><td class="price-dn">-1,000원</td></tr></tbody></table></div></details>
+    <p style="font-weight:700;color:#1b4332;margin:0 0 12px;">바디케어</p><details style="margin-bottom:10px;" open><summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span>📅 2026-04-14&nbsp;&nbsp;🔥 오특 진행</span><span style="font-size:12px;font-weight:400;color:#999;">1개 상품 ▾</span></summary><div style="overflow-x:auto;margin-top:8px;"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>전날 (2026-04-13)</th><th>오특 당일 (2026-04-14)</th><th>다음날 (2026-04-15)</th><th>전날比 변동</th></tr></thead><tbody><tr><td><span class="rb rn">17</span></td><td>벨먼</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4월 올영픽] 벨먼x뵈르뵈르 내추럴 스파 고보습 크리미 바닐라 머스크 스크럽워시 400ml(+컵괄사 기획)">[4월 올영픽] 벨먼x뵈르뵈르 내추럴 스파 고보습 크리미 바닐라 머스크 스크럽워시 400ml(+컵괄사 기획)</td><td>—</td><td style="font-weight:700;">11,700원&nbsp;<span class="tag t-otuk">오특</span>&nbsp;<span style="font-size:11px;color:#e65100;font-weight:700;">22% 할인</span><br><span style="font-size:11px;color:#aaa;text-decoration:line-through;">정가 14,900원</span></td><td>12,900원</td><td class="">-</td></tr></tbody></table></div></details><details style="margin-bottom:10px;" ><summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span>📅 2026-04-13&nbsp;&nbsp;🔥 오특 진행</span><span style="font-size:12px;font-weight:400;color:#999;">1개 상품 ▾</span></summary><div style="overflow-x:auto;margin-top:8px;"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>전날 (2026-04-12)</th><th>오특 당일 (2026-04-13)</th><th>다음날 (2026-04-14)</th><th>전날比 변동</th></tr></thead><tbody><tr><td><span class="rb r1">1</span></td><td>존슨즈</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4/13 하루특가] 존슨즈 뷰티 로션 500ml 3종 택 1 (청순형광등/물먹복숭아/속광로즈)">[4/13 하루특가] 존슨즈 뷰티 로션 500ml 3종 택 1 (청순형광등/물먹복숭아/속광로즈)</td><td>—</td><td style="font-weight:700;">11,450원&nbsp;<span class="tag t-otuk">오특</span>&nbsp;<span style="font-size:11px;color:#e65100;font-weight:700;">50% 할인</span><br><span style="font-size:11px;color:#aaa;text-decoration:line-through;">정가 22,900원</span></td><td>—</td><td class="">-</td></tr></tbody></table></div></details><details style="margin-bottom:10px;" ><summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span>📅 2026-04-12&nbsp;&nbsp;🔥 오특 진행</span><span style="font-size:12px;font-weight:400;color:#999;">5개 상품 ▾</span></summary><div style="overflow-x:auto;margin-top:8px;"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>전날 (—)</th><th>오특 당일 (2026-04-12)</th><th>다음날 (2026-04-13)</th><th>전날比 변동</th></tr></thead><tbody><tr><td><span class="rb r1">1</span></td><td>일리윤</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4/12 하루특가] 일리윤 세라마이드 아토 로션 몬치치 한정에디션(600ml+한정 굿즈 기획)">[4/12 하루특가] 일리윤 세라마이드 아토 로션 몬치치 한정에디션(600ml+한정 굿즈 기획)</td><td>(데이터없음)</td><td style="font-weight:700;">20,900원&nbsp;<span class="tag t-otuk">오특</span>&nbsp;<span style="font-size:11px;color:#e65100;font-weight:700;">35% 할인</span><br><span style="font-size:11px;color:#aaa;text-decoration:line-through;">정가 31,900원</span></td><td>—</td><td class="">-</td></tr><tr><td><span class="rb r2">2</span></td><td>일리윤</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4월올영픽]일리윤 세라마이드아토 집중크림 몬치치 한정에디션(150ml*2+한정굿즈 기획)">[4월올영픽]일리윤 세라마이드아토 집중크림 몬치치 한정에디션(150ml*2+한정굿즈 기획)</td><td>(데이터없음)</td><td style="font-weight:700;">16,400원&nbsp;<span class="tag t-otuk">오특</span>&nbsp;<span style="font-size:11px;color:#e65100;font-weight:700;">34% 할인</span><br><span style="font-size:11px;color:#aaa;text-decoration:line-through;">정가 25,000원</span></td><td>18,900원</td><td class="">-</td></tr><tr><td><span class="rb r3">3</span></td><td>일리윤</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4월올영픽]일리윤 프레쉬모이스춰 스크럽워시 몬치치 한정에디션(400ml*2+한정굿즈 기획)">[4월올영픽]일리윤 프레쉬모이스춰 스크럽워시 몬치치 한정에디션(400ml*2+한정굿즈 기획)</td><td>(데이터없음)</td><td style="font-weight:700;">15,900원&nbsp;<span class="tag t-otuk">오특</span>&nbsp;<span style="font-size:11px;color:#e65100;font-weight:700;">36% 할인</span><br><span style="font-size:11px;color:#aaa;text-decoration:line-through;">정가 24,900원</span></td><td>16,400원</td><td class="">-</td></tr><tr><td><span class="rb rn">5</span></td><td>럽센트</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[NEW] 럽센트 생화향 스크럽 워시 500ml 4종">[NEW] 럽센트 생화향 스크럽 워시 500ml 4종</td><td>(데이터없음)</td><td style="font-weight:700;">9,900원&nbsp;<span class="tag t-otuk">오특</span>&nbsp;<span style="font-size:11px;color:#e65100;font-weight:700;">41% 할인</span><br><span style="font-size:11px;color:#aaa;text-decoration:line-through;">정가 16,900원</span></td><td>—</td><td class="">-</td></tr><tr><td><span class="rb rn">16</span></td><td>일리윤</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4월올영픽]일리윤 세라마이드 아토6.0 탑투토워시 몬치치 에디션(500ml+500ml리필+한정굿즈 기획)">[4월올영픽]일리윤 세라마이드 아토6.0 탑투토워시 몬치치 에디션(500ml+500ml리필+한정굿즈 기획)</td><td>(데이터없음)</td><td style="font-weight:700;">14,400원&nbsp;<span class="tag t-otuk">오특</span>&nbsp;<span style="font-size:11px;color:#e65100;font-weight:700;">37% 할인</span><br><span style="font-size:11px;color:#aaa;text-decoration:line-through;">정가 22,900원</span></td><td>14,900원</td><td class="">-</td></tr></tbody></table></div></details><p style="font-weight:700;color:#1b4332;margin:0 0 12px;">스킨케어</p><details style="margin-bottom:10px;" open><summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span>📅 2026-04-15&nbsp;&nbsp;🔥 오특 진행</span><span style="font-size:12px;font-weight:400;color:#999;">1개 상품 ▾</span></summary><div style="overflow-x:auto;margin-top:8px;"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>전날 (2026-04-14)</th><th>오특 당일 (2026-04-15)</th><th>다음날 (—)</th><th>전날比 변동</th></tr></thead><tbody><tr><td><span class="rb r2">2</span></td><td>랩시리즈</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="랩시리즈 데일리 레스큐 워터로션 200ml 단품/기획 (+30ml*2 추가증정)">랩시리즈 데일리 레스큐 워터로션 200ml 단품/기획 (+30ml*2 추가증정)</td><td>52,700원</td><td style="font-weight:700;">46,500원&nbsp;<span class="tag t-otuk">오특</span>&nbsp;<span style="font-size:11px;color:#e65100;font-weight:700;">25% 할인</span><br><span style="font-size:11px;color:#aaa;text-decoration:line-through;">정가 62,000원</span></td><td>(최신)</td><td class="price-dn">-6,200원</td></tr></tbody></table></div></details><details style="margin-bottom:10px;" ><summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span>📅 2026-04-14&nbsp;&nbsp;🔥 오특 진행</span><span style="font-size:12px;font-weight:400;color:#999;">1개 상품 ▾</span></summary><div style="overflow-x:auto;margin-top:8px;"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>전날 (2026-04-13)</th><th>오특 당일 (2026-04-14)</th><th>다음날 (2026-04-15)</th><th>전날比 변동</th></tr></thead><tbody><tr><td><span class="rb rn">5</span></td><td>브링그린</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[안경만두콜라보] 브링그린 티트리 시카 수딩 토너 (콜라보/500ml/250ml)">[안경만두콜라보] 브링그린 티트리 시카 수딩 토너 (콜라보/500ml/250ml)</td><td>18,900원</td><td style="font-weight:700;">17,900원&nbsp;<span class="tag t-otuk">오특</span>&nbsp;<span style="font-size:11px;color:#e65100;font-weight:700;">34% 할인</span><br><span style="font-size:11px;color:#aaa;text-decoration:line-through;">정가 27,000원</span></td><td>—</td><td class="price-dn">-1,000원</td></tr></tbody></table></div></details>
+  </div>
+
+  <!-- 브랜드 진입 / 이탈 전체 이력 -->
+  <div class="card full">
+    <h2>📊 브랜드 진입 / 이탈 전체 이력</h2>
+    <p style="font-size:12px;color:#888;margin-bottom:16px;">
+      🆕 신규 진입: 전날 100위권 밖에서 진입 &nbsp;|&nbsp;
+      ★ 역대 첫 등장: 수집 시작 이후 처음으로 100위권 진입 &nbsp;|&nbsp;
+      👋 이탈: 전날 100위권이었으나 오늘 밖으로 이탈
+    </p>
+    <p style="font-weight:700;color:#1b4332;margin:0 0 10px;">바디케어</p><details style="margin-bottom:8px;" open><summary style="cursor:pointer;padding:9px 14px;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:8px;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:700;">📅 2026-04-15</span><span style="font-size:12px;color:#666;">🆕 진입 12개 (★ 첫등장 4개 포함) 👋 이탈 10개 ▾</span></summary><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;overflow-x:auto;"><div><p style="font-size:12px;font-weight:700;color:#1565c0;margin-bottom:6px;">🆕 신규 진입 (12)</p><table><thead><tr><th>브랜드</th><th>순위</th></tr></thead><tbody><tr><td><span class="tag t-first">★ 첫등장</span> <strong>쿤달</strong></td><td>35위</td></tr><tr><td><span class="tag t-other">재진입</span> <strong>포맨트</strong></td><td>44위</td></tr><tr><td><span class="tag t-other">재진입</span> <strong>나인위시스</strong></td><td>50위</td></tr><tr><td><span class="tag t-other">재진입</span> <strong>럽센트</strong></td><td>59위</td></tr><tr><td><span class="tag t-other">재진입</span> <strong>오브제</strong></td><td>61위</td></tr><tr><td><span class="tag t-other">재진입</span> <strong>필립스</strong></td><td>68위</td></tr><tr><td><span class="tag t-other">재진입</span> <strong>네어</strong></td><td>77위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>힐그리즈</strong></td><td>78위</td></tr><tr><td><span class="tag t-other">재진입</span> <strong>바렌</strong></td><td>80위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>파넬</strong></td><td>88위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>디어도어</strong></td><td>90위</td></tr><tr><td><span class="tag t-other">재진입</span> <strong>비오템</strong></td><td>95위</td></tr></tbody></table></div><div><p style="font-size:12px;font-weight:700;color:#c62828;margin-bottom:6px;">👋 이탈 (10)</p><table><thead><tr><th>브랜드</th><th>전일 순위</th></tr></thead><tbody><tr><td><span class="tag t-exit">이탈</span> 플루</td><td style="color:#999;">4위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 록시땅</td><td style="color:#999;">52위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 라운드어라운드</td><td style="color:#999;">58위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 유세린</td><td style="color:#999;">60위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 씨퓨리</td><td style="color:#999;">72위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 델링그</td><td style="color:#999;">75위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 밀크바오밥</td><td style="color:#999;">79위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 아로마티카</td><td style="color:#999;">91위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 지저쓰</td><td style="color:#999;">94위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 멈칫</td><td style="color:#999;">97위 → 없음</td></tr></tbody></table></div></div></details><details style="margin-bottom:8px;" ><summary style="cursor:pointer;padding:9px 14px;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:8px;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:700;">📅 2026-04-14</span><span style="font-size:12px;color:#666;">🆕 진입 9개 (★ 첫등장 8개 포함) 👋 이탈 13개 ▾</span></summary><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;overflow-x:auto;"><div><p style="font-size:12px;font-weight:700;color:#1565c0;margin-bottom:6px;">🆕 신규 진입 (9)</p><table><thead><tr><th>브랜드</th><th>순위</th></tr></thead><tbody><tr><td><span class="tag t-first">★ 첫등장</span> <strong>혼바디</strong></td><td>20위</td></tr><tr><td><span class="tag t-other">재진입</span> <strong>록시땅</strong></td><td>52위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>유세린</strong></td><td>60위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>스위스나린</strong></td><td>71위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>씨퓨리</strong></td><td>72위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>델링그</strong></td><td>75위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>밀크바오밥</strong></td><td>79위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>아로마티카</strong></td><td>91위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>멈칫</strong></td><td>97위</td></tr></tbody></table></div><div><p style="font-size:12px;font-weight:700;color:#c62828;margin-bottom:6px;">👋 이탈 (13)</p><table><thead><tr><th>브랜드</th><th>전일 순위</th></tr></thead><tbody><tr><td><span class="tag t-exit">이탈</span> 휩드</td><td style="color:#999;">42위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 오브제</td><td style="color:#999;">53위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 바렌</td><td style="color:#999;">55위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 라피타</td><td style="color:#999;">63위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 바버501</td><td style="color:#999;">65위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 포맨트</td><td style="color:#999;">66위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 타입넘버</td><td style="color:#999;">75위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 네어</td><td style="color:#999;">78위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 필립스</td><td style="color:#999;">81위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 블랑101</td><td style="color:#999;">85위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 폴라초이스</td><td style="color:#999;">87위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 비오템</td><td style="color:#999;">92위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 어노브</td><td style="color:#999;">93위 → 없음</td></tr></tbody></table></div></div></details><details style="margin-bottom:8px;" ><summary style="cursor:pointer;padding:9px 14px;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:8px;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:700;">📅 2026-04-13</span><span style="font-size:12px;color:#666;">🆕 진입 13개 (★ 첫등장 13개 포함) 👋 이탈 8개 ▾</span></summary><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;overflow-x:auto;"><div><p style="font-size:12px;font-weight:700;color:#1565c0;margin-bottom:6px;">🆕 신규 진입 (13)</p><table><thead><tr><th>브랜드</th><th>순위</th></tr></thead><tbody><tr><td><span class="tag t-first">★ 첫등장</span> <strong>휩드</strong></td><td>42위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>오브제</strong></td><td>53위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>바렌</strong></td><td>55위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>바디네이처</strong></td><td>57위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>질레트</strong></td><td>64위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>바버501</strong></td><td>65위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>카밀</strong></td><td>84위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>블랑101</strong></td><td>85위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>폴라초이스</strong></td><td>87위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>플루</strong></td><td>88위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>비오템</strong></td><td>92위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>어노브</strong></td><td>93위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>스카이보틀</strong></td><td>98위</td></tr></tbody></table></div><div><p style="font-size:12px;font-weight:700;color:#c62828;margin-bottom:6px;">👋 이탈 (8)</p><table><thead><tr><th>브랜드</th><th>전일 순위</th></tr></thead><tbody><tr><td><span class="tag t-exit">이탈</span> 럽센트</td><td style="color:#999;">5위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 비클리닉스</td><td style="color:#999;">52위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 아리얼</td><td style="color:#999;">57위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 데저트 에센스</td><td style="color:#999;">59위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 비비앙</td><td style="color:#999;">69위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 아벤느</td><td style="color:#999;">84위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 나인위시스</td><td style="color:#999;">96위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 록시땅</td><td style="color:#999;">97위 → 없음</td></tr></tbody></table></div></div></details><hr style="border:none;border-top:1px solid #eee;margin:16px 0;"><p style="font-weight:700;color:#1b4332;margin:0 0 10px;">스킨케어</p><details style="margin-bottom:8px;" open><summary style="cursor:pointer;padding:9px 14px;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:8px;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:700;">📅 2026-04-15</span><span style="font-size:12px;color:#666;">🆕 진입 13개 (★ 첫등장 9개 포함) 👋 이탈 10개 ▾</span></summary><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;overflow-x:auto;"><div><p style="font-size:12px;font-weight:700;color:#1565c0;margin-bottom:6px;">🆕 신규 진입 (13)</p><table><thead><tr><th>브랜드</th><th>순위</th></tr></thead><tbody><tr><td><span class="tag t-other">재진입</span> <strong>랑콤</strong></td><td>37위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>유세린</strong></td><td>55위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>피캄</strong></td><td>60위</td></tr><tr><td><span class="tag t-other">재진입</span> <strong>아벤느</strong></td><td>72위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>닥터디퍼런트</strong></td><td>73위</td></tr><tr><td><span class="tag t-other">재진입</span> <strong>차앤박</strong></td><td>84위</td></tr><tr><td><span class="tag t-other">재진입</span> <strong>성분에디터</strong></td><td>86위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>아이오페</strong></td><td>89위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>믹순</strong></td><td>91위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>바버501</strong></td><td>94위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>라끄베르</strong></td><td>95위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>연작</strong></td><td>98위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>닥터하스킨</strong></td><td>100위</td></tr></tbody></table></div><div><p style="font-size:12px;font-weight:700;color:#c62828;margin-bottom:6px;">👋 이탈 (10)</p><table><thead><tr><th>브랜드</th><th>전일 순위</th></tr></thead><tbody><tr><td><span class="tag t-exit">이탈</span> 가쉬</td><td style="color:#999;">36위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 조선미녀</td><td style="color:#999;">46위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 어나더페이스</td><td style="color:#999;">54위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 제나벨</td><td style="color:#999;">68위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 구달</td><td style="color:#999;">81위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 크리니크</td><td style="color:#999;">85위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 헤라</td><td style="color:#999;">91위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 엠도씨</td><td style="color:#999;">93위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 원씽</td><td style="color:#999;">95위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 하다라보</td><td style="color:#999;">100위 → 없음</td></tr></tbody></table></div></div></details><details style="margin-bottom:8px;" ><summary style="cursor:pointer;padding:9px 14px;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:8px;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:700;">📅 2026-04-14</span><span style="font-size:12px;color:#666;">🆕 진입 11개 (★ 첫등장 10개 포함) 👋 이탈 10개 ▾</span></summary><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;overflow-x:auto;"><div><p style="font-size:12px;font-weight:700;color:#1565c0;margin-bottom:6px;">🆕 신규 진입 (11)</p><table><thead><tr><th>브랜드</th><th>순위</th></tr></thead><tbody><tr><td><span class="tag t-other">재진입</span> <strong>토니모리</strong></td><td>3위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>아이디얼포맨</strong></td><td>45위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>유리아쥬</strong></td><td>47위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>비욘드</strong></td><td>49위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>어나더페이스</strong></td><td>54위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>클럽맨피노드</strong></td><td>56위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>닥터자르트</strong></td><td>64위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>제나벨</strong></td><td>68위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>코스노리</strong></td><td>89위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>헤라</strong></td><td>91위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>엠도씨</strong></td><td>93위</td></tr></tbody></table></div><div><p style="font-size:12px;font-weight:700;color:#c62828;margin-bottom:6px;">👋 이탈 (10)</p><table><thead><tr><th>브랜드</th><th>전일 순위</th></tr></thead><tbody><tr><td><span class="tag t-exit">이탈</span> 차앤박</td><td style="color:#999;">46위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 아벤느</td><td style="color:#999;">48위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> rdrd</td><td style="color:#999;">51위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 코스알엑스</td><td style="color:#999;">52위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 랑콤</td><td style="color:#999;">58위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> VT</td><td style="color:#999;">64위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 정샘물</td><td style="color:#999;">72위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 헤이네이처</td><td style="color:#999;">74위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 성분에디터</td><td style="color:#999;">86위 → 없음</td></tr><tr><td><span class="tag t-exit">이탈</span> 아임프롬</td><td style="color:#999;">95위 → 없음</td></tr></tbody></table></div></div></details><details style="margin-bottom:8px;" ><summary style="cursor:pointer;padding:9px 14px;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:8px;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:700;">📅 2026-04-13</span><span style="font-size:12px;color:#666;">🆕 진입 41개 (★ 첫등장 41개 포함) 👋 이탈 1개 ▾</span></summary><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;overflow-x:auto;"><div><p style="font-size:12px;font-weight:700;color:#1565c0;margin-bottom:6px;">🆕 신규 진입 (41)</p><table><thead><tr><th>브랜드</th><th>순위</th></tr></thead><tbody><tr><td><span class="tag t-first">★ 첫등장</span> <strong>랩시리즈</strong></td><td>15위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>웰라쥬</strong></td><td>19위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>빌리프</strong></td><td>25위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>썸바이미</strong></td><td>29위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>파티온</strong></td><td>30위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>메디큐브</strong></td><td>32위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>제로이드</strong></td><td>33위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>가쉬</strong></td><td>34위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>한율</strong></td><td>36위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>달바</strong></td><td>37위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>조선미녀</strong></td><td>40위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>식물나라</strong></td><td>44위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>마녀공장</strong></td><td>45위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>차앤박</strong></td><td>46위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>아벤느</strong></td><td>48위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>헤브블루</strong></td><td>49위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>키엘</strong></td><td>50위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>rdrd</strong></td><td>51위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>코스알엑스</strong></td><td>52위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>풀리</strong></td><td>53위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>마몽드</strong></td><td>55위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>랑콤</strong></td><td>58위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>비플레인</strong></td><td>59위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>아이소이</strong></td><td>62위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>VT</strong></td><td>64위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>비오템</strong></td><td>67위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>메이크프렘</strong></td><td>68위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>오브제</strong></td><td>69위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>정샘물</strong></td><td>72위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>헤이네이처</strong></td><td>74위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>셀라딕스</strong></td><td>77위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>리얼베리어</strong></td><td>83위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>구달</strong></td><td>85위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>성분에디터</strong></td><td>86위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>AHC</strong></td><td>88위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>인터미션</strong></td><td>90위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>하다라보</strong></td><td>91위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>이즈앤트리</strong></td><td>92위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>원씽</strong></td><td>94위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>아임프롬</strong></td><td>95위</td></tr><tr><td><span class="tag t-first">★ 첫등장</span> <strong>크리니크</strong></td><td>96위</td></tr></tbody></table></div><div><p style="font-size:12px;font-weight:700;color:#c62828;margin-bottom:6px;">👋 이탈 (1)</p><table><thead><tr><th>브랜드</th><th>전일 순위</th></tr></thead><tbody><tr><td><span class="tag t-exit">이탈</span> 토니모리</td><td style="color:#999;">20위 → 없음</td></tr></tbody></table></div></div></details>
   </div>
 
 </div>
@@ -837,25 +941,83 @@ function showHistDate(cat, date, btn) {
   btn.classList.add('active');
 }
 
-// ── 브랜드 목록 갱신 ─────────────────────────────────────────────
-function refreshBrandList() {
-  const cat = document.getElementById('brand-cat-sel').value;
-  const sel = document.getElementById('brand-sel');
-  sel.innerHTML = '<option value="">브랜드를 선택하세요</option>';
+// ── 브랜드 검색 드롭다운 ─────────────────────────────────────────
+let _allBrands = [], _selectedBrand = '', _kbdIdx = -1;
 
+function refreshBrandList() {
+  const cat        = document.getElementById('brand-cat-sel').value;
   const latestDate = ALL_DATES[ALL_DATES.length - 1];
   const todaySnaps = BY_CATEG_DATE[cat]?.[latestDate] || [];
-  const brands = todaySnaps.map(p => p.brand_name_raw).filter(Boolean);
-  const unique = [...new Set(brands)];
-
-  unique.forEach(brand => {
-    const opt = document.createElement('option');
-    opt.value = brand;
-    opt.textContent = brand;
-    sel.appendChild(opt);
-  });
+  _allBrands    = [...new Set(todaySnaps.map(p => p.brand_name_raw).filter(Boolean))];
+  _selectedBrand = '';
+  document.getElementById('brand-search-input').value = '';
+  document.getElementById('brand-dropdown').style.display = 'none';
   document.getElementById('brand-detail').classList.remove('show');
 }
+
+function openBrandDropdown() {
+  const q = document.getElementById('brand-search-input').value.toLowerCase().trim();
+  renderBrandDropdown(q ? _allBrands.filter(b => b.toLowerCase().includes(q)) : _allBrands);
+  _kbdIdx = -1;
+}
+
+function filterBrandList() {
+  const q = document.getElementById('brand-search-input').value.toLowerCase().trim();
+  renderBrandDropdown(q ? _allBrands.filter(b => b.toLowerCase().includes(q)) : _allBrands);
+  _kbdIdx = -1;
+  // 입력값이 선택된 브랜드와 달라지면 선택 해제
+  if (_selectedBrand && document.getElementById('brand-search-input').value !== _selectedBrand) {
+    _selectedBrand = '';
+  }
+}
+
+function renderBrandDropdown(brands) {
+  const dd = document.getElementById('brand-dropdown');
+  if (!brands.length) {
+    dd.innerHTML = '<div class="bdi-empty">검색 결과 없음</div>';
+  } else {
+    dd.innerHTML = brands.map(b =>
+      '<div class="bdi" onclick="pickBrand('' + b.replace(/\/g,'\\').replace(/'/g,"\'") + '')">' + b + '</div>'
+    ).join('');
+  }
+  dd.style.display = 'block';
+}
+
+function pickBrand(brand) {
+  _selectedBrand = brand;
+  document.getElementById('brand-search-input').value = brand;
+  document.getElementById('brand-dropdown').style.display = 'none';
+  showBrandDetail();
+}
+
+function brandKeyNav(e) {
+  const dd    = document.getElementById('brand-dropdown');
+  const items = [...dd.querySelectorAll('.bdi')];
+  if (!items.length) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _kbdIdx = Math.min(_kbdIdx + 1, items.length - 1);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _kbdIdx = Math.max(_kbdIdx - 1, 0);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (_kbdIdx >= 0) items[_kbdIdx].click();
+    return;
+  } else if (e.key === 'Escape') {
+    dd.style.display = 'none';
+    return;
+  }
+  items.forEach((el, i) => el.classList.toggle('kbd-focus', i === _kbdIdx));
+  if (_kbdIdx >= 0) items[_kbdIdx].scrollIntoView({ block: 'nearest' });
+}
+
+// 드롭다운 바깥 클릭 시 닫기
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('brand-search-wrap');
+  if (wrap && !wrap.contains(e.target))
+    document.getElementById('brand-dropdown').style.display = 'none';
+});
 
 // ── 브랜드 상세 표시 ─────────────────────────────────────────────
 let rankChart = null, priceChart = null;
@@ -863,14 +1025,13 @@ let rankChart = null, priceChart = null;
 function selectBrand(cat, brand) {
   document.getElementById('brand-cat-sel').value = cat;
   refreshBrandList();
-  document.getElementById('brand-sel').value = brand;
-  showBrandDetail();
+  pickBrand(brand);
   document.querySelector('.card.full').scrollIntoView({ behavior: 'smooth' });
 }
 
 function showBrandDetail() {
-  const cat   = document.getElementById('brand-cat-sel').value;
-  const brand = document.getElementById('brand-sel').value;
+  const cat    = document.getElementById('brand-cat-sel').value;
+  const brand  = _selectedBrand;
   const detail = document.getElementById('brand-detail');
 
   if (!brand) { detail.classList.remove('show'); return; }
