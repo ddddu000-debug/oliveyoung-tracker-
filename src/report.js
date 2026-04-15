@@ -231,13 +231,11 @@ tr:hover td{background:#f9fdf9;}
 .brand-select-area select{padding:8px 12px;border-radius:8px;border:1.5px solid #ddd;
   font-size:13px;min-width:200px;cursor:pointer;}
 .brand-select-area select:focus{outline:none;border-color:#40916c;}
-.brand-search-wrap{position:relative;min-width:220px;}
-.brand-search-wrap input{width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;background:#fff;}
-.brand-search-wrap input:focus{outline:none;border-color:#40916c;box-shadow:0 0 0 3px rgba(64,145,108,.1);}
-.brand-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid #40916c;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;z-index:200;}
-.bdi{padding:8px 12px;font-size:13px;cursor:pointer;}
-.bdi:hover,.bdi.kbd-focus{background:#f0f7f4;color:#1b4332;font-weight:600;}
-.bdi-empty{padding:12px;font-size:12px;color:#aaa;text-align:center;}
+.brand-combo{display:flex;flex-direction:column;gap:5px;min-width:220px;}
+.brand-combo input{padding:8px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;background:#fff;}
+.brand-combo input:focus{outline:none;border-color:#40916c;box-shadow:0 0 0 3px rgba(64,145,108,.1);}
+.brand-combo select{padding:7px 10px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;cursor:pointer;background:#fff;}
+.brand-combo select:focus{outline:none;border-color:#40916c;}
 .brand-detail{display:none;}
 .brand-detail.show{display:block;}
 .chart-wrap{height:260px;position:relative;}
@@ -414,7 +412,7 @@ tr:hover td{background:#f9fdf9;}
   }).join('')}
 
   <!-- 브랜드 분석 -->
-  <div class="card full">
+  <div class="card full" id="brand-analysis-card">
     <h2>🔍 브랜드별 상세 분석</h2>
     <div class="brand-select-area">
       <span style="font-size:13px;font-weight:600;color:#555;">카테고리</span>
@@ -422,10 +420,11 @@ tr:hover td{background:#f9fdf9;}
         ${categories.map(c => `<option value="${c}">${catLabels[c]||c}</option>`).join('')}
       </select>
       <span style="font-size:13px;font-weight:600;color:#555;">브랜드</span>
-      <div class="brand-search-wrap" id="brand-search-wrap">
-        <input id="brand-search-input" type="text" placeholder="브랜드 검색 또는 선택..." autocomplete="off"
-          oninput="filterBrandList()" onfocus="openBrandDropdown()" onkeydown="brandKeyNav(event)">
-        <div id="brand-dropdown" class="brand-dropdown" style="display:none;"></div>
+      <div class="brand-combo">
+        <input id="brand-search-input" type="text" placeholder="🔍 브랜드 검색..." autocomplete="off" oninput="filterBrandList()">
+        <select id="brand-sel" onchange="showBrandDetail()">
+          <option value="">-- 브랜드를 선택하세요 --</option>
+        </select>
       </div>
     </div>
 
@@ -665,83 +664,32 @@ function showHistDate(cat, date, btn) {
   btn.classList.add('active');
 }
 
-// ── 브랜드 검색 드롭다운 ─────────────────────────────────────────
-let _allBrands = [], _selectedBrand = '', _kbdIdx = -1;
+// ── 브랜드 검색 + 선택 ───────────────────────────────────────────
+let _allBrands = [];
 
 function refreshBrandList() {
   const cat        = document.getElementById('brand-cat-sel').value;
   const latestDate = ALL_DATES[ALL_DATES.length - 1];
   const todaySnaps = BY_CATEG_DATE[cat]?.[latestDate] || [];
-  _allBrands    = [...new Set(todaySnaps.map(p => p.brand_name_raw).filter(Boolean))];
-  _selectedBrand = '';
+  _allBrands = [...new Set(todaySnaps.map(p => p.brand_name_raw).filter(Boolean))];
   document.getElementById('brand-search-input').value = '';
-  document.getElementById('brand-dropdown').style.display = 'none';
+  renderBrandSelect(_allBrands);
   document.getElementById('brand-detail').classList.remove('show');
-}
-
-function openBrandDropdown() {
-  const q = document.getElementById('brand-search-input').value.toLowerCase().trim();
-  renderBrandDropdown(q ? _allBrands.filter(b => b.toLowerCase().includes(q)) : _allBrands);
-  _kbdIdx = -1;
 }
 
 function filterBrandList() {
   const q = document.getElementById('brand-search-input').value.toLowerCase().trim();
-  renderBrandDropdown(q ? _allBrands.filter(b => b.toLowerCase().includes(q)) : _allBrands);
-  _kbdIdx = -1;
-  // 입력값이 선택된 브랜드와 달라지면 선택 해제
-  if (_selectedBrand && document.getElementById('brand-search-input').value !== _selectedBrand) {
-    _selectedBrand = '';
-  }
+  renderBrandSelect(q ? _allBrands.filter(b => b.toLowerCase().includes(q)) : _allBrands);
 }
 
-function renderBrandDropdown(brands) {
-  const dd = document.getElementById('brand-dropdown');
-  if (!brands.length) {
-    dd.innerHTML = '<div class="bdi-empty">검색 결과 없음</div>';
-  } else {
-    dd.innerHTML = brands.map(b =>
-      '<div class="bdi" onclick="pickBrand(\'' + b.replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\')">' + b + '</div>'
-    ).join('');
-  }
-  dd.style.display = 'block';
+function renderBrandSelect(brands) {
+  const sel = document.getElementById('brand-sel');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">-- 브랜드를 선택하세요 --</option>' +
+    brands.map(b => '<option value="' + b.replace(/"/g, '&quot;') + '">' + b + '</option>').join('');
+  // 검색 후에도 이미 선택된 브랜드 유지
+  if (prev && brands.includes(prev)) sel.value = prev;
 }
-
-function pickBrand(brand) {
-  _selectedBrand = brand;
-  document.getElementById('brand-search-input').value = brand;
-  document.getElementById('brand-dropdown').style.display = 'none';
-  showBrandDetail();
-}
-
-function brandKeyNav(e) {
-  const dd    = document.getElementById('brand-dropdown');
-  const items = [...dd.querySelectorAll('.bdi')];
-  if (!items.length) return;
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    _kbdIdx = Math.min(_kbdIdx + 1, items.length - 1);
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    _kbdIdx = Math.max(_kbdIdx - 1, 0);
-  } else if (e.key === 'Enter') {
-    e.preventDefault();
-    if (_kbdIdx >= 0) items[_kbdIdx].click();
-    return;
-  } else if (e.key === 'Escape') {
-    dd.style.display = 'none';
-    return;
-  }
-  items.forEach((el, i) => el.classList.toggle('kbd-focus', i === _kbdIdx));
-  if (_kbdIdx >= 0) items[_kbdIdx].scrollIntoView({ block: 'nearest' });
-}
-
-// 드롭다운 바깥 클릭 시 닫기
-document.addEventListener('click', function(e) {
-  const wrap = document.getElementById('brand-search-wrap');
-  if (wrap && !wrap.contains(e.target))
-    document.getElementById('brand-dropdown').style.display = 'none';
-});
 
 // ── 브랜드 상세 표시 ─────────────────────────────────────────────
 let rankChart = null, priceChart = null;
@@ -749,13 +697,14 @@ let rankChart = null, priceChart = null;
 function selectBrand(cat, brand) {
   document.getElementById('brand-cat-sel').value = cat;
   refreshBrandList();
-  pickBrand(brand);
-  document.querySelector('.card.full').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('brand-sel').value = brand;
+  showBrandDetail();
+  document.getElementById('brand-analysis-card').scrollIntoView({ behavior: 'smooth' });
 }
 
 function showBrandDetail() {
   const cat    = document.getElementById('brand-cat-sel').value;
-  const brand  = _selectedBrand;
+  const brand  = document.getElementById('brand-sel').value;
   const detail = document.getElementById('brand-detail');
 
   if (!brand) { detail.classList.remove('show'); return; }
