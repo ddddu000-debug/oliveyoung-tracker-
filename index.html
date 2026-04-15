@@ -84,9 +84,12 @@ tr:hover td{background:#f9fdf9;}
 </style>
 </head>
 <body>
-<header>
-  <h1>🛍️ 올리브영 랭킹 대시보드</h1>
-  <p>기준: 2026-04-15 &nbsp;|&nbsp; 수집일: 4일 &nbsp;|&nbsp; 카테고리: 바디케어, 스킨케어</p>
+<header style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+  <div>
+    <h1>🛍️ 올리브영 랭킹 대시보드</h1>
+    <p>기준: 2026-04-15 &nbsp;|&nbsp; 수집일: 4일 &nbsp;|&nbsp; 카테고리: 바디케어, 스킨케어</p>
+  </div>
+  <a href="data.html" style="padding:7px 16px;border-radius:20px;border:1.5px solid rgba(255,255,255,.6);color:#fff;font-size:12px;text-decoration:none;white-space:nowrap;">📦 Raw 데이터</a>
 </header>
 
 <div class="wrap">
@@ -103,7 +106,7 @@ tr:hover td{background:#f9fdf9;}
         <div class="ico">🔥</div>
         <div>
           <h3>[스킨케어] 오늘 오특(오늘의 특가) 진행 중!</h3>
-          <p></p>
+          <p>랩시리즈(2위)</p>
         </div>
       </div>
   </div>
@@ -397,10 +400,50 @@ tr:hover td{background:#f9fdf9;}
   <!-- 가격 변동 -->
   <div class="card cat-section" data-cat="bodycare">
       <h2>💰 바디케어 가격 변동</h2>
-      <p class="no-data">오늘 가격 변동 없음</p>
+      <table><thead><tr><th>브랜드</th><th>오늘</th><th>전일</th><th>변동액</th><th>변동률</th></tr></thead><tbody>
+          <tr>
+              <td>쉬크</td>
+              <td>12,900원</td>
+              <td>15,900원</td>
+              <td class="price-dn">-3,000원</td>
+              <td class="price-dn">-19%</td>
+            </tr><tr>
+              <td>더마비</td>
+              <td>12,000원</td>
+              <td>19,000원</td>
+              <td class="price-dn">-7,000원</td>
+              <td class="price-dn">-37%</td>
+            </tr><tr>
+              <td>니베아</td>
+              <td>10,500원</td>
+              <td>11,400원</td>
+              <td class="price-dn">-900원</td>
+              <td class="price-dn">-8%</td>
+            </tr><tr>
+              <td>벨먼</td>
+              <td>12,900원</td>
+              <td>11,700원</td>
+              <td class="price-up">+1,200원</td>
+              <td class="price-up">+10%</td>
+            </tr>
+          </tbody></table>
     </div><div class="card cat-section" data-cat="skincare">
       <h2>💰 스킨케어 가격 변동</h2>
-      <p class="no-data">오늘 가격 변동 없음</p>
+      <table><thead><tr><th>브랜드</th><th>오늘</th><th>전일</th><th>변동액</th><th>변동률</th></tr></thead><tbody>
+          <tr>
+              <td>랩시리즈</td>
+              <td>46,500원</td>
+              <td>52,700원</td>
+              <td class="price-dn">-6,200원</td>
+              <td class="price-dn">-12%</td>
+            </tr><tr>
+              <td>브링그린</td>
+              <td>18,900원</td>
+              <td>17,900원</td>
+              <td class="price-up">+1,000원</td>
+              <td class="price-up">+6%</td>
+            </tr>
+          </tbody></table>
     </div>
 
   <!-- 날짜별 히스토리 -->
@@ -748,34 +791,8 @@ tr:hover td{background:#f9fdf9;}
 
   <!-- 오특 이력 -->
   <div class="card full">
-    <h2>🔥 오특 진행 이력</h2>
-    <p style="font-weight:700;color:#1b4332;margin-bottom:8px;">바디케어</p>
-          <table style="margin-bottom:16px;"><thead><tr><th>날짜</th><th>상품 수</th><th>브랜드 목록</th></tr></thead><tbody>
-          <tr>
-              <td><strong>2026-04-14</strong> <span class="tag t-otuk">오특</span></td>
-              <td>0개</td>
-              <td></td>
-            </tr><tr>
-              <td><strong>2026-04-13</strong> <span class="tag t-otuk">오특</span></td>
-              <td>0개</td>
-              <td></td>
-            </tr><tr>
-              <td><strong>2026-04-12</strong> <span class="tag t-otuk">오특</span></td>
-              <td>0개</td>
-              <td></td>
-            </tr>
-          </tbody></table><p style="font-weight:700;color:#1b4332;margin-bottom:8px;">스킨케어</p>
-          <table style="margin-bottom:16px;"><thead><tr><th>날짜</th><th>상품 수</th><th>브랜드 목록</th></tr></thead><tbody>
-          <tr>
-              <td><strong>2026-04-15</strong> <span class="tag t-otuk">오특</span></td>
-              <td>0개</td>
-              <td></td>
-            </tr><tr>
-              <td><strong>2026-04-14</strong> <span class="tag t-otuk">오특</span></td>
-              <td>0개</td>
-              <td></td>
-            </tr>
-          </tbody></table>
+    <h2>🔥 오특 진행 이력 — 상품별 가격 변동</h2>
+    <p style="font-weight:700;color:#1b4332;margin:0 0 12px;">바디케어</p><details style="margin-bottom:10px;" open><summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span>📅 2026-04-14&nbsp;&nbsp;🔥 오특 진행</span><span style="font-size:12px;font-weight:400;color:#999;">1개 상품 ▾</span></summary><div style="overflow-x:auto;margin-top:8px;"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>전날 (2026-04-13)</th><th>오특 당일 (2026-04-14)</th><th>다음날 (2026-04-15)</th><th>전날比 변동</th></tr></thead><tbody><tr><td><span class="rb rn">17</span></td><td>벨먼</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4월 올영픽] 벨먼x뵈르뵈르 내추럴 스파 고보습 크리미 바닐라 머스크 스크럽워시 400ml(+컵괄사 기획)">[4월 올영픽] 벨먼x뵈르뵈르 내추럴 스파 고보습 크리미 바닐라 머스크 스크럽워시 400ml(+컵괄사 기획)</td><td>—</td><td style="font-weight:700;">11,700원&nbsp;<span class="tag t-otuk">오특</span></td><td>12,900원</td><td class="">-</td></tr></tbody></table></div></details><details style="margin-bottom:10px;" ><summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span>📅 2026-04-13&nbsp;&nbsp;🔥 오특 진행</span><span style="font-size:12px;font-weight:400;color:#999;">1개 상품 ▾</span></summary><div style="overflow-x:auto;margin-top:8px;"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>전날 (2026-04-12)</th><th>오특 당일 (2026-04-13)</th><th>다음날 (2026-04-14)</th><th>전날比 변동</th></tr></thead><tbody><tr><td><span class="rb r1">1</span></td><td>존슨즈</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4/13 하루특가] 존슨즈 뷰티 로션 500ml 3종 택 1 (청순형광등/물먹복숭아/속광로즈)">[4/13 하루특가] 존슨즈 뷰티 로션 500ml 3종 택 1 (청순형광등/물먹복숭아/속광로즈)</td><td>—</td><td style="font-weight:700;">11,450원&nbsp;<span class="tag t-otuk">오특</span></td><td>—</td><td class="">-</td></tr></tbody></table></div></details><details style="margin-bottom:10px;" ><summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span>📅 2026-04-12&nbsp;&nbsp;🔥 오특 진행</span><span style="font-size:12px;font-weight:400;color:#999;">5개 상품 ▾</span></summary><div style="overflow-x:auto;margin-top:8px;"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>전날 (—)</th><th>오특 당일 (2026-04-12)</th><th>다음날 (2026-04-13)</th><th>전날比 변동</th></tr></thead><tbody><tr><td><span class="rb r1">1</span></td><td>일리윤</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4/12 하루특가] 일리윤 세라마이드 아토 로션 몬치치 한정에디션(600ml+한정 굿즈 기획)">[4/12 하루특가] 일리윤 세라마이드 아토 로션 몬치치 한정에디션(600ml+한정 굿즈 기획)</td><td>(데이터없음)</td><td style="font-weight:700;">20,900원&nbsp;<span class="tag t-otuk">오특</span></td><td>—</td><td class="">-</td></tr><tr><td><span class="rb r2">2</span></td><td>일리윤</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4월올영픽]일리윤 세라마이드아토 집중크림 몬치치 한정에디션(150ml*2+한정굿즈 기획)">[4월올영픽]일리윤 세라마이드아토 집중크림 몬치치 한정에디션(150ml*2+한정굿즈 기획)</td><td>(데이터없음)</td><td style="font-weight:700;">16,400원&nbsp;<span class="tag t-otuk">오특</span></td><td>18,900원</td><td class="">-</td></tr><tr><td><span class="rb r3">3</span></td><td>일리윤</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4월올영픽]일리윤 프레쉬모이스춰 스크럽워시 몬치치 한정에디션(400ml*2+한정굿즈 기획)">[4월올영픽]일리윤 프레쉬모이스춰 스크럽워시 몬치치 한정에디션(400ml*2+한정굿즈 기획)</td><td>(데이터없음)</td><td style="font-weight:700;">15,900원&nbsp;<span class="tag t-otuk">오특</span></td><td>16,400원</td><td class="">-</td></tr><tr><td><span class="rb rn">5</span></td><td>럽센트</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[NEW] 럽센트 생화향 스크럽 워시 500ml 4종">[NEW] 럽센트 생화향 스크럽 워시 500ml 4종</td><td>(데이터없음)</td><td style="font-weight:700;">9,900원&nbsp;<span class="tag t-otuk">오특</span></td><td>—</td><td class="">-</td></tr><tr><td><span class="rb rn">16</span></td><td>일리윤</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[4월올영픽]일리윤 세라마이드 아토6.0 탑투토워시 몬치치 에디션(500ml+500ml리필+한정굿즈 기획)">[4월올영픽]일리윤 세라마이드 아토6.0 탑투토워시 몬치치 에디션(500ml+500ml리필+한정굿즈 기획)</td><td>(데이터없음)</td><td style="font-weight:700;">14,400원&nbsp;<span class="tag t-otuk">오특</span></td><td>14,900원</td><td class="">-</td></tr></tbody></table></div></details><p style="font-weight:700;color:#1b4332;margin:0 0 12px;">스킨케어</p><details style="margin-bottom:10px;" open><summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span>📅 2026-04-15&nbsp;&nbsp;🔥 오특 진행</span><span style="font-size:12px;font-weight:400;color:#999;">1개 상품 ▾</span></summary><div style="overflow-x:auto;margin-top:8px;"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>전날 (2026-04-14)</th><th>오특 당일 (2026-04-15)</th><th>다음날 (—)</th><th>전날比 변동</th></tr></thead><tbody><tr><td><span class="rb r2">2</span></td><td>랩시리즈</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="랩시리즈 데일리 레스큐 워터로션 200ml 단품/기획 (+30ml*2 추가증정)">랩시리즈 데일리 레스큐 워터로션 200ml 단품/기획 (+30ml*2 추가증정)</td><td>52,700원</td><td style="font-weight:700;">46,500원&nbsp;<span class="tag t-otuk">오특</span></td><td>(최신)</td><td class="price-dn">-6,200원</td></tr></tbody></table></div></details><details style="margin-bottom:10px;" ><summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;"><span>📅 2026-04-14&nbsp;&nbsp;🔥 오특 진행</span><span style="font-size:12px;font-weight:400;color:#999;">1개 상품 ▾</span></summary><div style="overflow-x:auto;margin-top:8px;"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>전날 (2026-04-13)</th><th>오특 당일 (2026-04-14)</th><th>다음날 (2026-04-15)</th><th>전날比 변동</th></tr></thead><tbody><tr><td><span class="rb rn">5</span></td><td>브링그린</td><td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="[안경만두콜라보] 브링그린 티트리 시카 수딩 토너 (콜라보/500ml/250ml)">[안경만두콜라보] 브링그린 티트리 시카 수딩 토너 (콜라보/500ml/250ml)</td><td>18,900원</td><td style="font-weight:700;">17,900원&nbsp;<span class="tag t-otuk">오특</span></td><td>—</td><td class="price-dn">-1,000원</td></tr></tbody></table></div></details>
   </div>
 
 </div>
