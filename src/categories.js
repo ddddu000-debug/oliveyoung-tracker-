@@ -17,6 +17,13 @@ const CATEGORIES = [
     baseUrl:    'https://www.oliveyoung.co.kr/store/main/getBestList.do',
     params:     'dispCatNo=900000100100001&fltDispCatNo=10000010003&pageIdx=1&rowsPerPage=8',
   },
+  {
+    name:       'haircare',
+    label:      '헤어케어',
+    singlePage: true,
+    baseUrl:    'https://www.oliveyoung.co.kr/store/main/getBestList.do',
+    params:     'dispCatNo=900000100100001&fltDispCatNo=10000010004&pageIdx=1&rowsPerPage=8',
+  },
 ];
 
 module.exports = { CATEGORIES };

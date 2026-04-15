@@ -18,7 +18,7 @@ async function generateReport() {
   // ── 날짜 / 카테고리 목록 ──────────────────────────────────────────
   const allDates    = [...new Set(snaps.map(r => r.snapshot_date))].sort();
   const latestDate  = allDates[allDates.length - 1];
-  const CATEG_ORDER = ['skincare', 'bodycare'];
+  const CATEG_ORDER = ['skincare', 'bodycare', 'haircare'];
   const categories  = [...new Set(snaps.map(r => r.category))].sort(
     (a, b) => {
       const ai = CATEG_ORDER.indexOf(a); const bi = CATEG_ORDER.indexOf(b);
