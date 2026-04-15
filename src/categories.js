@@ -24,6 +24,13 @@ const CATEGORIES = [
     baseUrl:    'https://www.oliveyoung.co.kr/store/main/getBestList.do',
     params:     'dispCatNo=900000100100001&fltDispCatNo=10000010004&pageIdx=1&rowsPerPage=8',
   },
+  {
+    name:       'makeup',
+    label:      '메이크업',
+    singlePage: true,
+    baseUrl:    'https://www.oliveyoung.co.kr/store/main/getBestList.do',
+    params:     'dispCatNo=900000100100001&fltDispCatNo=10000010002&pageIdx=1&rowsPerPage=8',
+  },
 ];
 
 module.exports = { CATEGORIES };
