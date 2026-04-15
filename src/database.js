@@ -144,17 +144,22 @@ async function fetchAllChanges() {
 async function fetchYesterdaySnapshots(category) {
   const supabase = getClient();
 
-  // 해당 카테고리의 가장 최근 날짜 2개 조회
-  const { data: dates } = await supabase
+  // 하루 최대 100개 * 여유분 → 고유 날짜 2개를 확보하기 위해 300행 조회 후 JS에서 중복 제거
+  const { data: rows } = await supabase
     .from('raw_snapshots')
     .select('snapshot_date')
     .eq('category', category)
     .order('snapshot_date', { ascending: false })
-    .limit(2);
+    .limit(300);
 
-  if (!dates || dates.length < 2) return [];
+  if (!rows || rows.length === 0) return [];
 
-  const yesterday = dates[1].snapshot_date;
+  // 중복 제거 후 날짜 목록 (내림차순)
+  const distinctDates = [...new Set(rows.map(r => r.snapshot_date))];
+  if (distinctDates.length < 2) return [];          // 아직 하루치 데이터만 있음
+
+  const yesterday = distinctDates[1];               // 두 번째 고유 날짜 = 어제
+
   const { data, error } = await supabase
     .from('raw_snapshots')
     .select('*')

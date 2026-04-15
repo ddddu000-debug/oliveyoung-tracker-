@@ -1,4 +1,5 @@
 const { fetchAllSnapshots, fetchAllChanges } = require('./database');
+const { makeProductKey } = require('./normalizer');
 const fs   = require('fs');
 const path = require('path');
 require('dotenv').config();
@@ -58,10 +59,12 @@ async function generateReport() {
        .forEach(s => otukDates[s.category]?.add(s.snapshot_date));
 
   // ── 오늘 변동 데이터 (카테고리 구분용) ───────────────────────────
-  // daily_changes에 category가 없으므로 product_key로 카테고리 매핑
+  // raw_snapshots에 product_key 컬럼이 없으므로, brand_name_raw+product_name_raw로 재계산해 매핑
   const keyToCategory = {};
-  snaps.filter(s => s.snapshot_date === latestDate)
-       .forEach(s => { if (s.product_key) keyToCategory[s.product_key] = s.category; });
+  snaps.forEach(s => {
+    const k = makeProductKey(s.brand_name_raw, s.product_name_raw);
+    keyToCategory[k] = s.category;
+  });
 
   const todayChanges = changes.filter(c => c.snapshot_date === latestDate);
   todayChanges.forEach(c => {
