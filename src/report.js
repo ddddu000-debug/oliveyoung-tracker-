@@ -18,7 +18,7 @@ async function generateReport() {
   // ── 날짜 / 카테고리 목록 ──────────────────────────────────────────
   const allDates    = [...new Set(snaps.map(r => r.snapshot_date))].sort();
   const latestDate  = allDates[allDates.length - 1];
-  const CATEG_ORDER = ['skincare', 'bodycare', 'haircare', 'makeup'];
+  const CATEG_ORDER = ['skincare', 'bodycare', 'haircare', 'makeup', 'maskpack'];
   const categories  = [...new Set(snaps.map(r => r.category))].sort(
     (a, b) => {
       const ai = CATEG_ORDER.indexOf(a); const bi = CATEG_ORDER.indexOf(b);
@@ -140,7 +140,7 @@ async function generateReport() {
     latestDate,
     allDates,
     categories,
-    catLabels: { skincare: '스킨케어', bodycare: '바디케어', haircare: '헤어케어', makeup: '메이크업' },
+    catLabels: { skincare: '스킨케어', bodycare: '바디케어', haircare: '헤어케어', makeup: '메이크업', maskpack: '마스크팩' },
     byCategDate,
     brandHistory,
     otukDates: Object.fromEntries(
@@ -813,7 +813,7 @@ refreshBrandList();
 function buildDataHtml(snaps, changes) {
   const allDates   = [...new Set(snaps.map(r => r.snapshot_date))].sort();
   const categories = [...new Set(snaps.map(r => r.category))];
-  const catLabels  = { skincare: '스킨케어', bodycare: '바디케어', haircare: '헤어케어', makeup: '메이크업' };
+  const catLabels  = { skincare: '스킨케어', bodycare: '바디케어', haircare: '헤어케어', makeup: '메이크업', maskpack: '마스크팩' };
   const latestDate = allDates[allDates.length - 1] || '';
 
   const dateOptions    = allDates.map(d => `<option value="${d}">${d}</option>`).join('');

@@ -31,6 +31,13 @@ const CATEGORIES = [
     baseUrl:    'https://www.oliveyoung.co.kr/store/main/getBestList.do',
     params:     'dispCatNo=900000100100001&fltDispCatNo=10000010002&pageIdx=1&rowsPerPage=8',
   },
+  {
+    name:       'maskpack',
+    label:      '마스크팩',
+    singlePage: true,
+    baseUrl:    'https://www.oliveyoung.co.kr/store/main/getBestList.do',
+    params:     'dispCatNo=900000100100001&fltDispCatNo=10000010009&pageIdx=1&rowsPerPage=8',
+  },
 ];
 
 module.exports = { CATEGORIES };
