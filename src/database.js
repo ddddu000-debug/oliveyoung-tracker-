@@ -117,27 +117,45 @@ async function saveBrandEntries(entries) {
   console.log(`  ✅ ${entries.length}개 브랜드 기록됨`);
 }
 
+// ── 페이지네이션 헬퍼 (Supabase 기본 1000행 한도 우회) ───────────────
+async function fetchAllRows(queryBuilder) {
+  const PAGE = 1000;
+  let from = 0;
+  const all = [];
+  while (true) {
+    const { data, error } = await queryBuilder(from, from + PAGE - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all.push(...data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
+}
+
 // ── 대시보드용 데이터 읽기 ────────────────────────────────────────────
 async function fetchAllSnapshots() {
   const supabase = getClient();
-  const { data, error } = await supabase
-    .from('raw_snapshots')
-    .select('*')
-    .order('snapshot_date', { ascending: true })
-    .order('category')
-    .order('rank');
-  if (error) throw new Error(`raw_snapshots 읽기 실패: ${error.message}`);
-  return data || [];
+  return fetchAllRows((from, to) =>
+    supabase
+      .from('raw_snapshots')
+      .select('*')
+      .order('snapshot_date', { ascending: true })
+      .order('category')
+      .order('rank')
+      .range(from, to)
+  );
 }
 
 async function fetchAllChanges() {
   const supabase = getClient();
-  const { data, error } = await supabase
-    .from('daily_changes')
-    .select('*')
-    .order('snapshot_date', { ascending: true });
-  if (error) throw new Error(`daily_changes 읽기 실패: ${error.message}`);
-  return data || [];
+  return fetchAllRows((from, to) =>
+    supabase
+      .from('daily_changes')
+      .select('*')
+      .order('snapshot_date', { ascending: true })
+      .range(from, to)
+  );
 }
 
 // ── analyzer용: 어제 raw_snapshots 읽기 ──────────────────────────────

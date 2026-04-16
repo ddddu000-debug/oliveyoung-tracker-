@@ -44,15 +44,24 @@ async function trySheetsWithRetry(fn, name) {
   }
 }
 
-// 과거에 등장한 브랜드 key 목록 조회
+// 과거에 등장한 브랜드 key 목록 조회 (페이지네이션 적용)
 async function fetchPastBrandKeys(category, today) {
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
-  const { data } = await supabase
-    .from('raw_snapshots')
-    .select('brand_name_raw')
-    .eq('category', category)
-    .lt('snapshot_date', today);
-  const keys = new Set((data || []).map(r => normalizeBrand(r.brand_name_raw)));
+  const PAGE = 1000;
+  let from = 0;
+  const keys = new Set();
+  while (true) {
+    const { data } = await supabase
+      .from('raw_snapshots')
+      .select('brand_name_raw')
+      .eq('category', category)
+      .lt('snapshot_date', today)
+      .range(from, from + PAGE - 1);
+    if (!data || data.length === 0) break;
+    data.forEach(r => keys.add(normalizeBrand(r.brand_name_raw)));
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
   return keys;
 }
 
