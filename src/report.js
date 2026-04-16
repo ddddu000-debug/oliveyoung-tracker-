@@ -659,10 +659,40 @@ tr:hover td{background:#f9fdf9;}
 
 <script>
 // ── 데이터 ────────────────────────────────────────────────────────
+// BRAND_HISTORY: 전 기간 순위·가격 요약 (브랜드 차트용)
 const BRAND_HISTORY = ${JSON.stringify(D.brandHistory)};
 const ALL_DATES     = ${JSON.stringify(D.allDates)};
-const BY_CATEG_DATE = ${JSON.stringify(D.byCategDate)};
 const CAT_LABELS    = ${JSON.stringify(D.catLabels)};
+// 카테고리별 전체 기간 브랜드 이름 목록 (순위 이탈 브랜드 포함)
+const BRAND_NAMES_BY_CAT = ${JSON.stringify((() => {
+  const out = {};
+  categories.forEach(cat => {
+    const names = new Set();
+    Object.values(byCategDate[cat] || {}).forEach(daySnaps =>
+      daySnaps.forEach(p => { if (p.brand_name_raw) names.add(p.brand_name_raw); })
+    );
+    out[cat] = [...names].sort();
+  });
+  return out;
+})())};
+// 오늘 스냅샷만 (브랜드 상세 분석 상품 목록용)
+const TODAY_SNAPS = ${JSON.stringify((() => {
+  const out = {};
+  categories.forEach(cat => {
+    out[cat] = (byCategDate[cat]?.[latestDate] || []).map(p => ({
+      rank: p.rank,
+      brand_name_raw: p.brand_name_raw,
+      product_name_raw: p.product_name_raw,
+      sale_price: p.sale_price,
+      list_price: p.list_price,
+      price_discount_rate: p.price_discount_rate,
+      badges: p.badges,
+      has_otuk: p.has_otuk,
+      is_sold_out: p.is_sold_out,
+    }));
+  });
+  return out;
+})())};
 
 // ── 카테고리 탭 전환 ──────────────────────────────────────────────
 let currentCat = 'all';
@@ -696,14 +726,10 @@ function showHistDate(cat, date, btn) {
 // ── 브랜드 선택 ───────────────────────────────────────────
 function refreshBrandList() {
   const cat = document.getElementById('brand-cat-sel').value;
-  const allCatBrands = new Set();
-  Object.values(BY_CATEG_DATE[cat] || {}).forEach(daySnaps => {
-    daySnaps.forEach(p => { if (p.brand_name_raw) allCatBrands.add(p.brand_name_raw); });
-  });
-  const sorted = [...allCatBrands].sort();
+  const brands = BRAND_NAMES_BY_CAT[cat] || [];
   const sel = document.getElementById('brand-sel');
   sel.innerHTML = '<option value="">-- 브랜드를 선택하세요 --</option>' +
-    sorted.map(b => '<option value="' + b.replace(/"/g, '&quot;') + '">' + b + '</option>').join('');
+    brands.map(b => '<option value="' + b.replace(/"/g, '&quot;') + '">' + b + '</option>').join('');
   document.getElementById('brand-detail').classList.remove('show');
 }
 
@@ -780,9 +806,7 @@ function showBrandDetail() {
   });
 
   // 해당 브랜드 상품 테이블
-  const latestDate = ALL_DATES[ALL_DATES.length - 1];
-  const todaySnaps = BY_CATEG_DATE[cat]?.[latestDate] || [];
-  const brandProds = todaySnaps.filter(p => p.brand_name_raw === brand);
+  const brandProds = (TODAY_SNAPS[cat] || []).filter(p => p.brand_name_raw === brand);
 
   const tableHtml = brandProds.length === 0 ? '<p class="no-data">오늘 랭킹에 없음</p>' :
     '<p style="font-size:12px;color:#666;margin-bottom:8px;">오늘 랭킹 상품</p>' +
