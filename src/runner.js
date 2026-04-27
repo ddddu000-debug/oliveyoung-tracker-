@@ -5,11 +5,10 @@ const { saveRawSnapshots,
         saveBrandEntries,
         fetchYesterdaySnapshots } = require('./database');
 const {
-  saveRawSnapshots:    sheetsSaveRaw,
-  saveDailyChanges:    sheetsSaveChanges,
-  saveBrandEntries:    sheetsSaveEntries,
-  updateDashboard:     sheetsUpdateDashboard,
-  setupKeywordSearchSheet,
+  saveRawSnapshots:  sheetsSaveRaw,
+  saveDailyChanges:  sheetsSaveChanges,
+  saveBrandEntries:  sheetsSaveEntries,
+  updateDashboard:   sheetsUpdateDashboard
 }                               = require('./sheets');
 const { analyze }               = require('./analyzer');
 const { generateReport }        = require('./report');
@@ -123,12 +122,11 @@ async function run() {
     // 5. brand_entries 저장 — Supabase
     await withRetry(() => saveBrandEntries(allBrandEntries), 'brand_entries 저장');
 
-    // 6. Google Sheets — daily_changes / brand_entries / 대시보드 시트 / 키워드 검색
+    // 6. Google Sheets — daily_changes / brand_entries / 대시보드 시트
     if (USE_SHEETS) {
       await trySheetsWithRetry(() => sheetsSaveChanges(allDailyChanges), 'Sheets daily_changes 저장');
       await trySheetsWithRetry(() => sheetsSaveEntries(allBrandEntries),  'Sheets brand_entries 저장');
       await trySheetsWithRetry(() => sheetsUpdateDashboard(products, allDailyChanges), 'Sheets 대시보드 갱신');
-      await trySheetsWithRetry(() => setupKeywordSearchSheet(), 'Sheets 키워드 검색 시트 설정');
     }
 
     // 7. HTML 대시보드 생성

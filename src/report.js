@@ -135,6 +135,41 @@ async function generateReport() {
     }
   });
 
+  // ── 제품별 누적 통계 (키워드 검색용) ────────────────────────────
+  const productMap = {};
+  snaps.forEach(s => {
+    const key = s.brand_name_raw + '||' + s.product_name_raw + '||' + s.category;
+    if (!productMap[key]) {
+      productMap[key] = {
+        product_name: s.product_name_raw,
+        brand_name: s.brand_name_raw,
+        category: s.category,
+        ranks: [], prices: [], dates: new Set(),
+      };
+    }
+    const e = productMap[key];
+    if (s.rank)       e.ranks.push(+s.rank);
+    if (s.sale_price) e.prices.push(+s.sale_price);
+    e.dates.add(s.snapshot_date);
+  });
+  const productSummary = Object.values(productMap).map(e => {
+    const sortedDates = [...e.dates].sort();
+    return {
+      product_name: e.product_name,
+      brand_name:   e.brand_name,
+      category:     e.category,
+      avg_rank:  e.ranks.length  ? Math.round(e.ranks.reduce((a,b)=>a+b,0)/e.ranks.length*10)/10 : null,
+      best_rank: e.ranks.length  ? Math.min(...e.ranks)  : null,
+      worst_rank:e.ranks.length  ? Math.max(...e.ranks)  : null,
+      avg_price: e.prices.length ? Math.round(e.prices.reduce((a,b)=>a+b,0)/e.prices.length) : null,
+      min_price: e.prices.length ? Math.min(...e.prices) : null,
+      max_price: e.prices.length ? Math.max(...e.prices) : null,
+      count:      sortedDates.length,
+      first_date: sortedDates[0],
+      last_date:  sortedDates[sortedDates.length-1],
+    };
+  }).sort((a,b) => (a.avg_rank||999) - (b.avg_rank||999));
+
   // ── 직렬화할 데이터 오브젝트 ──────────────────────────────────────
   const DATA = {
     latestDate,
@@ -148,6 +183,7 @@ async function generateReport() {
     ),
     todayChanges,
     brandMovements,
+    productSummary,
   };
 
   // ── HTML 생성 ─────────────────────────────────────────────────────
@@ -165,7 +201,7 @@ async function generateReport() {
 
 function buildHtml(D) {
   const { latestDate, allDates, categories, catLabels,
-          byCategDate, brandHistory, otukDates, todayChanges, brandMovements } = D;
+          byCategDate, brandHistory, otukDates, todayChanges, brandMovements, productSummary } = D;
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -287,6 +323,21 @@ tr:hover td{background:#f9fdf9;}
   .stat .n{font-size:18px;}
   .stat .l{font-size:11px;}
 }
+
+/* 키워드 검색 */
+#keyword-search-section{display:none;}
+.kw-input-wrap{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap;}
+.kw-input-wrap input{flex:1;min-width:200px;padding:10px 16px;border-radius:24px;
+  border:2px solid #40916c;font-size:15px;outline:none;transition:.2s;}
+.kw-input-wrap input:focus{box-shadow:0 0 0 3px rgba(64,145,108,.2);}
+.kw-result-meta{font-size:12px;color:#888;white-space:nowrap;}
+.kw-tag{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600;}
+.kw-tag-skin{background:#e8f5e9;color:#1b4332;}
+.kw-tag-body{background:#e3f2fd;color:#1565c0;}
+.kw-tag-hair{background:#fff3e0;color:#e65100;}
+.kw-tag-make{background:#fce4ec;color:#880e4f;}
+.kw-tag-mask{background:#f3e5f5;color:#6a1b9a;}
+.kw-empty{color:#bbb;font-size:14px;text-align:center;padding:40px 0;}
 </style>
 </head>
 <body>
@@ -304,6 +355,7 @@ tr:hover td{background:#f9fdf9;}
   <div class="cat-tabs">
     <button class="cat-tab active" onclick="switchCat('all',this)">📊 전체</button>
     ${categories.map(c => `<button class="cat-tab" onclick="switchCat('${c}',this)">${catLabels[c]||c}</button>`).join('')}
+    <button class="cat-tab" onclick="switchCat('keyword',this)">🔍 키워드 검색</button>
   </div>
 
   <!-- 오특 배너 (카테고리별 표시) -->
@@ -446,6 +498,19 @@ tr:hover td{background:#f9fdf9;}
       </script>
     </div>`;
   }).join('')}
+
+  <!-- 키워드 검색 -->
+  <div id="keyword-search-section">
+    <div class="card full">
+      <h2>🔍 키워드 검색</h2>
+      <p style="font-size:12px;color:#888;margin-bottom:14px;">제품명 또는 브랜드명으로 전체 누적 데이터를 검색합니다. 예: 앰플, 선크림, 이니스프리</p>
+      <div class="kw-input-wrap">
+        <input id="kw-input" type="text" placeholder="검색어를 입력하세요..." oninput="kwSearch()">
+        <span class="kw-result-meta" id="kw-meta"></span>
+      </div>
+      <div id="kw-results"><p class="kw-empty">검색어를 입력하면 결과가 표시됩니다.</p></div>
+    </div>
+  </div>
 
   <!-- 브랜드 분석 -->
   <div class="card full" id="brand-analysis-card">
@@ -663,6 +728,7 @@ tr:hover td{background:#f9fdf9;}
 const BRAND_HISTORY = ${JSON.stringify(D.brandHistory)};
 const ALL_DATES     = ${JSON.stringify(D.allDates)};
 const CAT_LABELS    = ${JSON.stringify(D.catLabels)};
+const PRODUCT_SUMMARY = ${JSON.stringify(productSummary)};
 // 카테고리별 전체 기간 브랜드 이름 목록 (순위 이탈 브랜드 포함)
 const BRAND_NAMES_BY_CAT = ${JSON.stringify((() => {
   const out = {};
@@ -703,6 +769,24 @@ function switchCat(cat, btn) {
   document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
+  // 키워드 검색 탭 처리
+  const kwSection = document.getElementById('keyword-search-section');
+  if (cat === 'keyword') {
+    kwSection.style.display = '';
+    document.querySelectorAll('[data-cat]').forEach(el => el.style.display = 'none');
+    document.getElementById('otuk-banners').style.display = 'none';
+    document.getElementById('stats-area').style.display = 'none';
+    document.getElementById('brand-analysis-card').style.display = 'none';
+    document.getElementById('kw-input').focus();
+    return;
+  }
+
+  // 일반 탭: 키워드 검색 섹션 숨기기
+  kwSection.style.display = 'none';
+  document.getElementById('otuk-banners').style.display = '';
+  document.getElementById('stats-area').style.display = '';
+  document.getElementById('brand-analysis-card').style.display = '';
+
   // data-cat 속성이 있는 모든 요소 표시/숨김
   document.querySelectorAll('[data-cat]').forEach(el => {
     el.style.display = (cat === 'all' || cat === el.dataset.cat) ? '' : 'none';
@@ -713,6 +797,74 @@ function switchCat(cat, btn) {
     document.getElementById('brand-cat-sel').value = cat;
     refreshBrandList();
   }
+}
+
+// ── 키워드 검색 ───────────────────────────────────────────────────
+const KW_CAT_TAG = {
+  skincare: ['kw-tag-skin', '스킨케어'],
+  bodycare: ['kw-tag-body', '바디케어'],
+  haircare: ['kw-tag-hair', '헤어케어'],
+  makeup:   ['kw-tag-make', '메이크업'],
+  maskpack: ['kw-tag-mask', '마스크팩'],
+};
+
+function kwSearch() {
+  const q = document.getElementById('kw-input').value.trim().toLowerCase();
+  const meta = document.getElementById('kw-meta');
+  const container = document.getElementById('kw-results');
+
+  if (!q) {
+    meta.textContent = '';
+    container.innerHTML = '<p class="kw-empty">검색어를 입력하면 결과가 표시됩니다.</p>';
+    return;
+  }
+
+  const results = PRODUCT_SUMMARY.filter(p =>
+    (p.product_name||'').toLowerCase().includes(q) ||
+    (p.brand_name||'').toLowerCase().includes(q)
+  );
+
+  meta.textContent = results.length > 0 ? results.length + '개 제품' : '';
+
+  if (results.length === 0) {
+    container.innerHTML = '<p class="kw-empty">"' + q + '" 검색 결과가 없습니다.</p>';
+    return;
+  }
+
+  const rows = results.map(p => {
+    const [tagCls, tagLabel] = KW_CAT_TAG[p.category] || ['kw-tag-skin', p.category];
+    return '<tr>' +
+      '<td><span class="kw-tag ' + tagCls + '">' + tagLabel + '</span></td>' +
+      '<td style="font-weight:600;">' + (p.brand_name||'-') + '</td>' +
+      '<td style="max-width:200px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="' + (p.product_name||'').replace(/"/g,'&quot;') + '">' + (p.product_name||'-') + '</td>' +
+      '<td style="text-align:center;font-weight:700;color:#1b4332;">' + (p.avg_rank != null ? p.avg_rank + '위' : '-') + '</td>' +
+      '<td style="text-align:center;color:#e74c3c;font-weight:700;">' + (p.best_rank != null ? p.best_rank + '위' : '-') + '</td>' +
+      '<td style="text-align:center;color:#3498db;">' + (p.worst_rank != null ? p.worst_rank + '위' : '-') + '</td>' +
+      '<td style="text-align:right;">' + (p.avg_price != null ? p.avg_price.toLocaleString() + '원' : '-') + '</td>' +
+      '<td style="text-align:right;color:#e74c3c;">' + (p.min_price != null ? p.min_price.toLocaleString() + '원' : '-') + '</td>' +
+      '<td style="text-align:right;color:#3498db;">' + (p.max_price != null ? p.max_price.toLocaleString() + '원' : '-') + '</td>' +
+      '<td style="text-align:center;">' + p.count + '일</td>' +
+      '<td style="text-align:center;font-size:12px;color:#999;">' + (p.first_date||'-') + '</td>' +
+      '<td style="text-align:center;font-size:12px;color:#999;">' + (p.last_date||'-') + '</td>' +
+    '</tr>';
+  }).join('');
+
+  container.innerHTML =
+    '<div class="tbl-wrap"><table>' +
+    '<thead><tr>' +
+    '<th>카테고리</th><th>브랜드</th><th>제품명</th>' +
+    '<th style="text-align:center;">평균 순위</th>' +
+    '<th style="text-align:center;">최고 순위</th>' +
+    '<th style="text-align:center;">최저 순위</th>' +
+    '<th style="text-align:right;">평균 가격</th>' +
+    '<th style="text-align:right;">최저가</th>' +
+    '<th style="text-align:right;">최고가</th>' +
+    '<th style="text-align:center;">노출일수</th>' +
+    '<th style="text-align:center;">첫 등장</th>' +
+    '<th style="text-align:center;">마지막 등장</th>' +
+    '</tr></thead>' +
+    '<tbody>' + rows + '</tbody>' +
+    '</table></div>';
 }
 
 // ── 날짜 히스토리 탭 ─────────────────────────────────────────────
