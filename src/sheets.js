@@ -144,7 +144,71 @@ async function saveBrandEntries(entries) {
   console.log(`  ✅ ${entries.length}개 브랜드 기록됨`);
 }
 
+// ── 키워드 검색 시트 초기 설정 ─────────────────────────────────────────
+async function setupKeywordSearchSheet() {
+  const sheets = await getSheets();
+  const spreadsheetId = process.env.SPREADSHEET_ID;
+
+  // 시트가 이미 존재하면 스킵
+  const meta = await sheets.spreadsheets.get({ spreadsheetId });
+  const exists = meta.data.sheets.some(s => s.properties.title === '키워드 검색');
+  if (exists) {
+    console.log('[Sheets] 키워드 검색 시트 이미 존재 — 스킵');
+    return;
+  }
+
+  // 새 시트 추가
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [{ addSheet: { properties: { title: '키워드 검색' } } }],
+    },
+  });
+
+  // 제품별 요약: 브랜드·제품명으로 그룹핑, 평균 순위 오름차순
+  const summaryFormula =
+    `=IFERROR(QUERY(raw_snapshots!A:P,` +
+    `"SELECT G, F, AVG(E), MIN(E), MAX(E), AVG(I), MIN(I), MAX(I), COUNT(A), MIN(A), MAX(A) ` +
+    `WHERE (F CONTAINS '"&B2&"' OR G CONTAINS '"&B2&"') AND F <> 'product_name_raw' ` +
+    `GROUP BY G, F ORDER BY AVG(E) ASC ` +
+    `LABEL G '브랜드', F '제품명', AVG(E) '평균 순위', MIN(E) '최고 순위', MAX(E) '최저 순위', ` +
+    `AVG(I) '평균 판매가', MIN(I) '최저가', MAX(I) '최고가', COUNT(A) '노출 횟수', MIN(A) '첫 등장', MAX(A) '마지막 등장'",0),` +
+    `"검색 결과가 없습니다")`;
+
+  // 전체 기록: 날짜 최신순, 같은 날엔 순위 오름차순
+  const detailFormula =
+    `=IFERROR(QUERY(raw_snapshots!A:P,` +
+    `"SELECT A, D, E, G, F, I, H, K ` +
+    `WHERE (F CONTAINS '"&B2&"' OR G CONTAINS '"&B2&"') AND F <> 'product_name_raw' ` +
+    `ORDER BY A DESC, E ASC ` +
+    `LABEL A '날짜', D '카테고리', E '순위', G '브랜드', F '제품명', I '판매가', H '정가', K '할인율'",0),` +
+    `"검색 결과가 없습니다")`;
+
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      valueInputOption: 'USER_ENTERED',
+      data: [
+        {
+          range: '키워드 검색!A1:B2',
+          values: [
+            ['🔍 키워드 검색', ''],
+            ['검색어 입력 →', ''],  // B2 셀에 직접 입력 (예: 앰플)
+          ],
+        },
+        { range: '키워드 검색!A4', values: [['📊 제품별 요약 (평균 순위 오름차순)']] },
+        { range: '키워드 검색!A5', values: [[summaryFormula]] },
+        { range: '키워드 검색!A18', values: [['📋 전체 기록 (최신순)']] },
+        { range: '키워드 검색!A19', values: [[detailFormula]] },
+      ],
+    },
+  });
+
+  console.log('[Sheets] ✅ 키워드 검색 시트 생성 완료');
+}
+
 module.exports = {
   getSheets, readSheet, appendRows, overwriteSheet,
   saveRawSnapshots, saveDailyChanges, saveBrandEntries,
+  setupKeywordSearchSheet,
 };
