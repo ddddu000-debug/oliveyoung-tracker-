@@ -600,7 +600,7 @@ tr:hover td{background:#f9fdf9;}
   }).join('')}
 
   <!-- 오특 이력 -->
-  <div class="card full">
+  <div class="card full" id="otuk-history-card">
     <h2>🔥 오특 진행 이력 — 상품별 가격 변동</h2>
     ${Object.values(otukDates).every(v=>v.length===0)
       ? '<p class="no-data">아직 오특 이벤트가 감지되지 않았어요.</p>'
@@ -665,7 +665,7 @@ tr:hover td{background:#f9fdf9;}
   </div>
 
   <!-- 브랜드 진입 / 이탈 전체 이력 -->
-  <div class="card full">
+  <div class="card full" id="brand-movement-card">
     <h2>📊 브랜드 진입 / 이탈 전체 이력</h2>
     <p style="font-size:12px;color:#888;margin-bottom:16px;">
       🆕 신규 진입: 전날 100위권 밖에서 진입 &nbsp;|&nbsp;
@@ -771,21 +771,18 @@ function switchCat(cat, btn) {
 
   // 키워드 검색 탭 처리
   const kwSection = document.getElementById('keyword-search-section');
+  const mainCards = ['otuk-banners','stats-area','brand-analysis-card','otuk-history-card','brand-movement-card'];
   if (cat === 'keyword') {
-    kwSection.style.display = '';
+    kwSection.style.display = 'block';
     document.querySelectorAll('[data-cat]').forEach(el => el.style.display = 'none');
-    document.getElementById('otuk-banners').style.display = 'none';
-    document.getElementById('stats-area').style.display = 'none';
-    document.getElementById('brand-analysis-card').style.display = 'none';
+    mainCards.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
     document.getElementById('kw-input').focus();
     return;
   }
 
   // 일반 탭: 키워드 검색 섹션 숨기기
   kwSection.style.display = 'none';
-  document.getElementById('otuk-banners').style.display = '';
-  document.getElementById('stats-area').style.display = '';
-  document.getElementById('brand-analysis-card').style.display = '';
+  mainCards.forEach(id => { const el=document.getElementById(id); if(el) el.style.display=''; });
 
   // data-cat 속성이 있는 모든 요소 표시/숨김
   document.querySelectorAll('[data-cat]').forEach(el => {
