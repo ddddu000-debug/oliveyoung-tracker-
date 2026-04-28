@@ -135,40 +135,34 @@ async function generateReport() {
     }
   });
 
-  // ── 제품별 누적 통계 (키워드 검색용) ────────────────────────────
+  // ── 제품별 날짜별 데이터 (키워드 검색 + 기간 슬라이서용) ──────────
   const productMap = {};
   snaps.forEach(s => {
     const key = s.brand_name_raw + '||' + s.product_name_raw + '||' + s.category;
     if (!productMap[key]) {
       productMap[key] = {
         product_name: s.product_name_raw,
-        brand_name: s.brand_name_raw,
-        category: s.category,
-        ranks: [], prices: [], dates: new Set(),
+        brand_name:   s.brand_name_raw,
+        category:     s.category,
+        byDate: {},
       };
     }
     const e = productMap[key];
-    if (s.rank)       e.ranks.push(+s.rank);
-    if (s.sale_price) e.prices.push(+s.sale_price);
-    e.dates.add(s.snapshot_date);
+    const d = s.snapshot_date;
+    if (!e.byDate[d]) e.byDate[d] = { rank: null, price: null };
+    // 같은 날 여러 행이면 가장 높은 순위(낮은 숫자) 유지
+    if (s.rank && (e.byDate[d].rank === null || +s.rank < e.byDate[d].rank))
+      e.byDate[d].rank = +s.rank;
+    if (s.sale_price) e.byDate[d].price = +s.sale_price;
   });
-  const productSummary = Object.values(productMap).map(e => {
-    const sortedDates = [...e.dates].sort();
-    return {
-      product_name: e.product_name,
-      brand_name:   e.brand_name,
-      category:     e.category,
-      avg_rank:  e.ranks.length  ? Math.round(e.ranks.reduce((a,b)=>a+b,0)/e.ranks.length*10)/10 : null,
-      best_rank: e.ranks.length  ? Math.min(...e.ranks)  : null,
-      worst_rank:e.ranks.length  ? Math.max(...e.ranks)  : null,
-      avg_price: e.prices.length ? Math.round(e.prices.reduce((a,b)=>a+b,0)/e.prices.length) : null,
-      min_price: e.prices.length ? Math.min(...e.prices) : null,
-      max_price: e.prices.length ? Math.max(...e.prices) : null,
-      count:      sortedDates.length,
-      first_date: sortedDates[0],
-      last_date:  sortedDates[sortedDates.length-1],
-    };
-  }).sort((a,b) => (a.avg_rank||999) - (b.avg_rank||999));
+  const productSummary = Object.values(productMap)
+    .sort((a, b) => {
+      const aRanks = Object.values(a.byDate).map(v => v.rank).filter(Boolean);
+      const bRanks = Object.values(b.byDate).map(v => v.rank).filter(Boolean);
+      const aAvg = aRanks.length ? aRanks.reduce((s,v)=>s+v,0)/aRanks.length : 999;
+      const bAvg = bRanks.length ? bRanks.reduce((s,v)=>s+v,0)/bRanks.length : 999;
+      return aAvg - bAvg;
+    });
 
   // ── 직렬화할 데이터 오브젝트 ──────────────────────────────────────
   const DATA = {
@@ -326,11 +320,25 @@ tr:hover td{background:#f9fdf9;}
 
 /* 키워드 검색 */
 #keyword-search-section{display:none;}
-.kw-input-wrap{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap;}
-.kw-input-wrap input{flex:1;min-width:200px;padding:10px 16px;border-radius:24px;
+.kw-input-wrap{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.kw-input-wrap input[type=text]{flex:1;min-width:200px;padding:10px 16px;border-radius:24px;
   border:2px solid #40916c;font-size:15px;outline:none;transition:.2s;}
-.kw-input-wrap input:focus{box-shadow:0 0 0 3px rgba(64,145,108,.2);}
+.kw-input-wrap input[type=text]:focus{box-shadow:0 0 0 3px rgba(64,145,108,.2);}
 .kw-result-meta{font-size:12px;color:#888;white-space:nowrap;}
+.kw-slicer{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  background:#f8fdf9;border:1px solid #d4edda;border-radius:10px;
+  padding:10px 14px;margin-bottom:16px;}
+.kw-slicer-label{font-size:12px;font-weight:700;color:#555;margin-right:4px;}
+.kw-period{padding:5px 14px;border-radius:16px;border:1.5px solid #ccc;
+  background:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;}
+.kw-period.active{background:#40916c;color:#fff;border-color:#40916c;}
+.kw-period:hover:not(.active){border-color:#40916c;color:#40916c;}
+.kw-divider{color:#ccc;font-size:12px;}
+.kw-date-range{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.kw-date-range input[type=date]{padding:4px 8px;border-radius:8px;border:1.5px solid #ddd;
+  font-size:12px;cursor:pointer;color:#333;}
+.kw-date-range input[type=date]:focus{outline:none;border-color:#40916c;}
+.kw-date-sep{font-size:12px;color:#888;}
 .kw-tag{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600;}
 .kw-tag-skin{background:#e8f5e9;color:#1b4332;}
 .kw-tag-body{background:#e3f2fd;color:#1565c0;}
@@ -503,10 +511,24 @@ tr:hover td{background:#f9fdf9;}
   <div id="keyword-search-section">
     <div class="card full">
       <h2>🔍 키워드 검색</h2>
-      <p style="font-size:12px;color:#888;margin-bottom:14px;">제품명 또는 브랜드명으로 전체 누적 데이터를 검색합니다. 예: 앰플, 선크림, 이니스프리</p>
+      <p style="font-size:12px;color:#888;margin-bottom:14px;">제품명 또는 브랜드명으로 검색 · 기간을 선택하면 해당 구간 통계로 재계산됩니다.</p>
       <div class="kw-input-wrap">
-        <input id="kw-input" type="text" placeholder="검색어를 입력하세요..." oninput="kwSearch()">
+        <input id="kw-input" type="text" placeholder="검색어를 입력하세요...  예: 앰플, 선크림, 이니스프리" oninput="kwSearch()">
         <span class="kw-result-meta" id="kw-meta"></span>
+      </div>
+      <div class="kw-slicer">
+        <span class="kw-slicer-label">기간</span>
+        <button class="kw-period active" onclick="kwSetPeriod(0,this)">전체</button>
+        <button class="kw-period" onclick="kwSetPeriod(7,this)">7일</button>
+        <button class="kw-period" onclick="kwSetPeriod(14,this)">14일</button>
+        <button class="kw-period" onclick="kwSetPeriod(30,this)">30일</button>
+        <span class="kw-divider">|</span>
+        <div class="kw-date-range">
+          <span class="kw-slicer-label">직접 선택</span>
+          <input type="date" id="kw-from" onchange="kwSetCustom()">
+          <span class="kw-date-sep">~</span>
+          <input type="date" id="kw-to" onchange="kwSetCustom()">
+        </div>
       </div>
       <div id="kw-results"><p class="kw-empty">검색어를 입력하면 결과가 표시됩니다.</p></div>
     </div>
@@ -805,9 +827,82 @@ const KW_CAT_TAG = {
   maskpack: ['kw-tag-mask', '마스크팩'],
 };
 
+// 날짜 범위 상태
+let kwDateFrom = '';
+let kwDateTo   = '';
+
+// 슬라이서 초기화: 날짜 input 범위 설정 + 기본값 전체
+(function initSlicer() {
+  const dates = ALL_DATES;
+  if (!dates.length) return;
+  const min = dates[0];
+  const max = dates[dates.length - 1];
+  const fromEl = document.getElementById('kw-from');
+  const toEl   = document.getElementById('kw-to');
+  fromEl.min = toEl.min = min;
+  fromEl.max = toEl.max = max;
+  fromEl.value = min;
+  toEl.value   = max;
+  kwDateFrom = min;
+  kwDateTo   = max;
+})();
+
+function kwSetPeriod(days, btn) {
+  document.querySelectorAll('.kw-period').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const dates = ALL_DATES;
+  if (!dates.length) return;
+  const max = dates[dates.length - 1];
+  let min;
+  if (days === 0) {
+    min = dates[0];
+  } else {
+    const cutoff = new Date(max);
+    cutoff.setDate(cutoff.getDate() - (days - 1));
+    const cutStr = cutoff.toISOString().slice(0, 10);
+    min = dates.find(d => d >= cutStr) || dates[0];
+  }
+  kwDateFrom = min;
+  kwDateTo   = max;
+  document.getElementById('kw-from').value = min;
+  document.getElementById('kw-to').value   = max;
+  kwSearch();
+}
+
+function kwSetCustom() {
+  const from = document.getElementById('kw-from').value;
+  const to   = document.getElementById('kw-to').value;
+  if (!from || !to) return;
+  kwDateFrom = from;
+  kwDateTo   = to <= from ? from : to;
+  document.querySelectorAll('.kw-period').forEach(b => b.classList.remove('active'));
+  kwSearch();
+}
+
+function kwComputeStats(product) {
+  const entries = Object.entries(product.byDate)
+    .filter(([d]) => d >= kwDateFrom && d <= kwDateTo);
+  const ranks  = entries.map(([,v]) => v.rank ).filter(v => v != null);
+  const prices = entries.map(([,v]) => v.price).filter(v => v != null);
+  const dates  = entries.map(([d]) => d).sort();
+  if (!dates.length) return null;
+  return {
+    avg_rank:   ranks.length  ? Math.round(ranks.reduce((a,b)=>a+b,0)/ranks.length*10)/10 : null,
+    best_rank:  ranks.length  ? Math.min(...ranks)  : null,
+    worst_rank: ranks.length  ? Math.max(...ranks)  : null,
+    avg_price:  prices.length ? Math.round(prices.reduce((a,b)=>a+b,0)/prices.length) : null,
+    min_price:  prices.length ? Math.min(...prices) : null,
+    max_price:  prices.length ? Math.max(...prices) : null,
+    count:      dates.length,
+    first_date: dates[0],
+    last_date:  dates[dates.length-1],
+  };
+}
+
 function kwSearch() {
-  const q = document.getElementById('kw-input').value.trim().toLowerCase();
-  const meta = document.getElementById('kw-meta');
+  const q         = document.getElementById('kw-input').value.trim().toLowerCase();
+  const meta      = document.getElementById('kw-meta');
   const container = document.getElementById('kw-results');
 
   if (!q) {
@@ -816,12 +911,18 @@ function kwSearch() {
     return;
   }
 
-  const results = PRODUCT_SUMMARY.filter(p =>
+  const matched = PRODUCT_SUMMARY.filter(p =>
     (p.product_name||'').toLowerCase().includes(q) ||
     (p.brand_name||'').toLowerCase().includes(q)
   );
 
-  meta.textContent = results.length > 0 ? results.length + '개 제품' : '';
+  // 기간 필터 적용 후 통계 계산
+  const results = matched
+    .map(p => ({ ...p, stats: kwComputeStats(p) }))
+    .filter(p => p.stats !== null)
+    .sort((a, b) => (a.stats.avg_rank||999) - (b.stats.avg_rank||999));
+
+  meta.textContent = results.length ? results.length + '개 제품' : '';
 
   if (results.length === 0) {
     container.innerHTML = '<p class="kw-empty">"' + q + '" 검색 결과가 없습니다.</p>';
@@ -829,20 +930,21 @@ function kwSearch() {
   }
 
   const rows = results.map(p => {
+    const s = p.stats;
     const [tagCls, tagLabel] = KW_CAT_TAG[p.category] || ['kw-tag-skin', p.category];
     return '<tr>' +
       '<td><span class="kw-tag ' + tagCls + '">' + tagLabel + '</span></td>' +
       '<td style="font-weight:600;">' + (p.brand_name||'-') + '</td>' +
       '<td style="max-width:200px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="' + (p.product_name||'').replace(/"/g,'&quot;') + '">' + (p.product_name||'-') + '</td>' +
-      '<td style="text-align:center;font-weight:700;color:#1b4332;">' + (p.avg_rank != null ? p.avg_rank + '위' : '-') + '</td>' +
-      '<td style="text-align:center;color:#e74c3c;font-weight:700;">' + (p.best_rank != null ? p.best_rank + '위' : '-') + '</td>' +
-      '<td style="text-align:center;color:#3498db;">' + (p.worst_rank != null ? p.worst_rank + '위' : '-') + '</td>' +
-      '<td style="text-align:right;">' + (p.avg_price != null ? p.avg_price.toLocaleString() + '원' : '-') + '</td>' +
-      '<td style="text-align:right;color:#e74c3c;">' + (p.min_price != null ? p.min_price.toLocaleString() + '원' : '-') + '</td>' +
-      '<td style="text-align:right;color:#3498db;">' + (p.max_price != null ? p.max_price.toLocaleString() + '원' : '-') + '</td>' +
-      '<td style="text-align:center;">' + p.count + '일</td>' +
-      '<td style="text-align:center;font-size:12px;color:#999;">' + (p.first_date||'-') + '</td>' +
-      '<td style="text-align:center;font-size:12px;color:#999;">' + (p.last_date||'-') + '</td>' +
+      '<td style="text-align:center;font-weight:700;color:#1b4332;">' + (s.avg_rank  != null ? s.avg_rank  + '위' : '-') + '</td>' +
+      '<td style="text-align:center;color:#e74c3c;font-weight:700;">' + (s.best_rank != null ? s.best_rank + '위' : '-') + '</td>' +
+      '<td style="text-align:center;color:#3498db;">'                 + (s.worst_rank!= null ? s.worst_rank+ '위' : '-') + '</td>' +
+      '<td style="text-align:right;">'                                 + (s.avg_price != null ? s.avg_price.toLocaleString()+'원' : '-') + '</td>' +
+      '<td style="text-align:right;color:#e74c3c;">'                  + (s.min_price != null ? s.min_price.toLocaleString()+'원' : '-') + '</td>' +
+      '<td style="text-align:right;color:#3498db;">'                  + (s.max_price != null ? s.max_price.toLocaleString()+'원' : '-') + '</td>' +
+      '<td style="text-align:center;">' + s.count + '일</td>' +
+      '<td style="text-align:center;font-size:12px;color:#999;">' + (s.first_date||'-') + '</td>' +
+      '<td style="text-align:center;font-size:12px;color:#999;">' + (s.last_date ||'-') + '</td>' +
     '</tr>';
   }).join('');
 
