@@ -6,6 +6,8 @@ function getClient() {
 }
 
 // ── raw_snapshots 저장 ────────────────────────────────────────────────
+// 같은 날짜/카테고리 데이터가 있으면 지우고 새로 넣음 (멱등성 보장)
+// → 같은 날 두 번 돌려도 최신 코드 결과로 덮어씌워짐
 async function saveRawSnapshots(products) {
   console.log('\n[DB] raw_snapshots 저장 중...');
   const supabase = getClient();
@@ -13,18 +15,13 @@ async function saveRawSnapshots(products) {
   const today    = products[0]?.snapshot_date;
   const category = products[0]?.category;
 
-  // 중복 확인
-  const { data: existing } = await supabase
+  // 같은 날짜/카테고리 기존 행 삭제
+  const { error: delErr } = await supabase
     .from('raw_snapshots')
-    .select('id')
+    .delete()
     .eq('snapshot_date', today)
-    .eq('category', category)
-    .limit(1);
-
-  if (existing && existing.length > 0) {
-    console.log(`  ⚠️  ${today} [${category}] 데이터가 이미 있어요. 건너뜀.`);
-    return false;
-  }
+    .eq('category', category);
+  if (delErr) throw new Error(`raw_snapshots 기존 데이터 삭제 실패: ${delErr.message}`);
 
   const rows = products.map(p => ({
     snapshot_date:         p.snapshot_date,
@@ -53,22 +50,24 @@ async function saveRawSnapshots(products) {
 }
 
 // ── daily_changes 저장 ────────────────────────────────────────────────
+// 같은 날짜 데이터가 있으면 지우고 새로 넣음 (멱등성 보장)
 async function saveDailyChanges(changes) {
   console.log('\n[DB] daily_changes 저장 중...');
   const supabase = getClient();
 
-  const today = changes[0]?.snapshot_date;
-
-  const { data: existing } = await supabase
-    .from('daily_changes')
-    .select('id')
-    .eq('snapshot_date', today)
-    .limit(1);
-
-  if (existing && existing.length > 0) {
-    console.log(`  ⚠️  ${today} 이미 있어요. 건너뜀.`);
+  if (changes.length === 0) {
+    console.log('  변동 없음 (어제 데이터 부족)');
     return;
   }
+
+  const today = changes[0]?.snapshot_date;
+
+  // 같은 날짜 기존 행 삭제
+  const { error: delErr } = await supabase
+    .from('daily_changes')
+    .delete()
+    .eq('snapshot_date', today);
+  if (delErr) throw new Error(`daily_changes 기존 데이터 삭제 실패: ${delErr.message}`);
 
   const rows = changes.map(c => ({
     snapshot_date:       c.snapshot_date,
@@ -93,6 +92,7 @@ async function saveDailyChanges(changes) {
 }
 
 // ── brand_entries 저장 ────────────────────────────────────────────────
+// 같은 날짜 데이터가 있으면 지우고 새로 넣음 (멱등성 보장)
 async function saveBrandEntries(entries) {
   console.log('\n[DB] brand_entries 저장 중...');
   const supabase = getClient();
@@ -101,6 +101,15 @@ async function saveBrandEntries(entries) {
     console.log('  신규 진입 브랜드 없음');
     return;
   }
+
+  const today = entries[0]?.snapshot_date;
+
+  // 같은 날짜 기존 행 삭제
+  const { error: delErr } = await supabase
+    .from('brand_entries')
+    .delete()
+    .eq('snapshot_date', today);
+  if (delErr) throw new Error(`brand_entries 기존 데이터 삭제 실패: ${delErr.message}`);
 
   const rows = entries.map(e => ({
     snapshot_date:  e.snapshot_date,
