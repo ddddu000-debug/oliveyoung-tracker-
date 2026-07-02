@@ -1,0 +1,74 @@
+name: DB 초기화 후 오늘 데이터 시딩
+
+# ⚠️ 수동 전용. DB 3개 테이블을 전부 비우고 오늘 수집분을 1일차로 다시 적립한다.
+# 잘못된 랭킹 기준으로 쌓인 과거 데이터를 버리고 새 기준으로 누적을 시작할 때 1회 실행.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: '정말 초기화하려면 RESET 을 입력하세요'
+        required: true
+        default: ''
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  reset-seed:
+    if: ${{ github.event.inputs.confirm == 'RESET' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 패키지 설치
+        run: npm install
+
+      - name: Playwright 브라우저 설치
+        run: npx playwright install chromium --with-deps
+
+      - name: .env 파일 생성
+        run: |
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
+          echo "SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}" >> .env
+          echo "GOOGLE_SHEETS_ID=${{ secrets.GOOGLE_SHEETS_ID }}" >> .env
+          echo "GOOGLE_APPLICATION_CREDENTIALS=google-credentials.json" >> .env
+
+      - name: Google 인증 파일 생성
+        run: echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > google-credentials.json
+
+      # 1) DB 전체 초기화
+      - name: DB 초기화
+        run: node src/reset.js
+        env:
+          CONFIRM_RESET: YES
+
+      # 2) 오늘 데이터 수집·저장 (1일차 적립)
+      - name: 랭킹 수집 실행
+        run: node src/runner.js
+        env:
+          DASHBOARD_PATH: ./dashboard.html
+          DATA_PAGE_PATH: ./data.html
+
+      # 3) 대시보드 파일 준비
+      - name: 대시보드 파일 준비
+        run: |
+          mkdir -p docs
+          cp dashboard.html docs/index.html
+          cp data.html docs/data.html
+
+      # 4) GitHub Pages 배포
+      - name: GitHub Pages 배포
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          publish_branch: gh-pages
