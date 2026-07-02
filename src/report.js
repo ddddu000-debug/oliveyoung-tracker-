@@ -247,10 +247,9 @@ function buildHtml(D) {
   // ── 이벤트 이력: 상품명/배지에서 행사·프로모션 감지 → 유형별 × 날짜별 정리 ──
   const EVENT_DEFS = [
     { key:'otuk',    icon:'🔥', label:'오특 (오늘의 특가)', test:(n,b,o)=> o===true||o==='true'||b.includes('오특') },
-    { key:'olyoung', icon:'⭐', label:'올영픽',            test:(n)=> /올영픽/.test(n) },
-    { key:'collab',  icon:'🤝', label:'콜라보',            test:(n)=> /콜라보|컬래버|collab/i.test(n) },
-    { key:'gift',    icon:'🎁', label:'증정 / 사은품',      test:(n)=> /증정|사은품|기프트|gift/i.test(n) },
-    { key:'limited', icon:'⏳', label:'한정 / 에디션',      test:(n)=> /한정|리미티드|에디션/i.test(n) },
+    { key:'olyoung', icon:'⭐', label:'올영픽',             test:(n)=> /올영픽/.test(n) },
+    { key:'collab',  icon:'🤝', label:'콜라보 / 에디션',    test:(n)=> /콜라보|컬래버|collab|에디션/i.test(n) },
+    { key:'model',   icon:'💁', label:'모델 / 인플루언서',  test:(n)=> /PICK/i.test(n) },
   ];
   const eventData = {};            // key -> { date -> [ {cat,brand,product,rank} ] }
   const eventProductSet = {};      // key -> Set(상품명) 누적 고유 상품 수
@@ -307,8 +306,7 @@ body.show-rest tr.rank-rest{display:table-row;}
 .ev-otuk{background:#fff1ec;color:#e65100;}.ev-otuk b{color:#e65100;}
 .ev-olyoung{background:#fff8e1;color:#f9a825;}.ev-olyoung b{color:#f9a825;}
 .ev-collab{background:#f3e5f5;color:#8e24aa;}.ev-collab b{color:#8e24aa;}
-.ev-gift{background:#e8f5e9;color:#2e7d32;}.ev-gift b{color:#2e7d32;}
-.ev-limited{background:#e3f2fd;color:#1565c0;}.ev-limited b{color:#1565c0;}
+.ev-model{background:#e3f2fd;color:#1565c0;}.ev-model b{color:#1565c0;}
 .ev-summary-row{cursor:pointer;padding:10px 14px;background:#f8f9fa;border:1px solid #e5e7eb;border-radius:8px;
   list-style:none;display:flex;justify-content:space-between;align-items:center;font-weight:700;color:#1b4332;}
 /* 키워드 인사이트: 월 선택 바 */
