@@ -203,12 +203,17 @@ function buildHtml(D) {
     const STOP = new Set(['기획','증정','추가','포함','단독','세트','에디션','한정','한정기획','기획전',
       '더블','리필','대용량','본품','구성','신상','리뉴얼','업그레이드','정품','사은품','쿠폰','세일','오특',
       '올영','올영픽','월올영픽','픽','증정품','선물','행사','특가','할인','최초','최대','무료','전용','공식',
-      '온라인','단독기획','더블기획','증정기획','기획세트','NEW','new','SET','set','AD','ml','g']);
+      '온라인','단독기획','더블기획','증정기획','기획세트','단품','택1','택2','증량','한정수량','사이즈',
+      'NEW','new','SET','set','AD','ml','g']);
     const isNoise = t => {
       if (!t || t.length < 2) return true;                          // 1글자 제외
       if (/^\d+$/.test(t)) return true;                             // 순수 숫자
       if (/^\d+(ml|g|kg|매|개|호|정|캡슐|팩|입|미|ea|p|포|프|세|월|일|주|년|호점)?$/i.test(t)) return true; // 숫자+단위/월
       if (/^[a-z]$/i.test(t)) return true;
+      if (/^택\d+$/.test(t)) return true;                           // 택1, 택2
+      if (/^\d+종$/.test(t)) return true;                           // 2종, 4종 (구성 개수)
+      if (/^\d+위$/.test(t)) return true;                           // 1위 (랭킹 문구)
+      if (/올영픽$/.test(t)) return true;                           // 올영픽, 7월올영픽
       return false;
     };
     const counts = new Map();
