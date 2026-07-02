@@ -495,119 +495,6 @@ tr:hover td{background:#f9fdf9;}
     </div>
   </div>
 
-  <!-- 가격 변동 -->
-  ${categories.map(cat => {
-    const priceChanged = todayChanges.filter(c => c._category === cat && (c.is_price_changed === true || c.is_price_changed === 'true'));
-    return `<div class="card cat-section" data-cat="${cat}">
-      <h2>💰 ${catLabels[cat]||cat} 가격 변동</h2>
-      ${priceChanged.length === 0
-        ? '<p class="no-data">오늘 가격 변동 없음</p>'
-        : `<div class="tbl-wrap"><table><thead><tr><th>브랜드</th><th>오늘</th><th>전일</th><th>변동액</th><th>변동률</th></tr></thead><tbody>
-          ${priceChanged.map(c => {
-            const diff = +c.price_change;
-            const cls  = diff > 0 ? 'price-up' : 'price-dn';
-            const sign = diff > 0 ? '+' : '';
-            const rate = c.price_change_rate ? sign+Math.round(+c.price_change_rate*100)+'%' : '-';
-            return `<tr>
-              <td>${c.brand_key}</td>
-              <td>${(+c.today_sale_price).toLocaleString()}원</td>
-              <td>${(+c.yesterday_sale_price).toLocaleString()}원</td>
-              <td class="${cls}">${sign}${diff.toLocaleString()}원</td>
-              <td class="${cls}">${rate}</td>
-            </tr>`;
-          }).join('')}
-          </tbody></table></div>`
-      }
-    </div>`;
-  }).join('')}
-
-  <!-- 날짜별 히스토리 -->
-  ${categories.map(cat => {
-    const catDates = allDates.filter(d => byCategDate[cat]?.[d]).reverse().slice(0,7);
-    return `<div class="card cat-section" data-cat="${cat}">
-      <h2>📅 ${catLabels[cat]||cat} 날짜별 TOP5 히스토리</h2>
-      <div class="date-nav">
-        ${catDates.map((d,i) => {
-          const isOtuk = otukDates[cat]?.includes(d);
-          return `<button class="date-btn${i===0?' active':''}${isOtuk?' otuk-day':''}"
-            onclick="showHistDate('${cat}','${d}',this)">${d}${isOtuk?' 🔥':''}</button>`;
-        }).join('')}
-      </div>
-      ${catDates.map((d,i) => `
-        <div id="hist-${cat}-${d}" style="display:${i===0?'block':'none'}">
-          <div class="tbl-wrap"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>정가</th><th>판매가</th><th>할인율</th></tr></thead><tbody>
-          ${(byCategDate[cat]?.[d]||[]).slice(0,5).map(p => {
-            const rc = +p.rank===1?'r1':+p.rank===2?'r2':+p.rank===3?'r3':'rn';
-            const disc = p.price_discount_rate ? Math.round(+p.price_discount_rate*100)+'%' : '-';
-            return `<tr>
-              <td><span class="rb ${rc}">${p.rank}</span></td>
-              <td>${p.brand_name_raw}</td>
-              <td>${p.product_name_raw.slice(0,30)}</td>
-              <td>${p.list_price ? (+p.list_price).toLocaleString()+'원':'-'}</td>
-              <td>${p.sale_price ? (+p.sale_price).toLocaleString()+'원':'-'}</td>
-              <td>${disc}</td>
-            </tr>`;
-          }).join('')}
-          </tbody></table></div>
-        </div>`).join('')}
-    </div>`;
-  }).join('')}
-
-  <!-- 브랜드 진입 / 이탈 전체 이력 -->
-  <div class="card full" id="brand-movement-card">
-    <h2>📊 브랜드 진입 / 이탈 전체 이력</h2>
-    <p style="font-size:12px;color:#888;margin-bottom:16px;">
-      🆕 신규 진입: 전날 100위권 밖에서 진입 &nbsp;|&nbsp;
-      ★ 역대 첫 등장: 수집 시작 이후 처음으로 100위권 진입 &nbsp;|&nbsp;
-      👋 이탈: 전날 100위권이었으나 오늘 밖으로 이탈
-    </p>
-    ${categories.map(cat => {
-      const allMvDates = Object.keys(brandMovements[cat]||{}).sort().reverse();
-      if (!allMvDates.length) return '<p class="no-data">이탈/진입 데이터가 아직 없어요.</p>';
-      return '<p style="font-weight:700;color:#1b4332;margin:0 0 10px;">' + (catLabels[cat]||cat) + '</p>' +
-        allMvDates.map(d => {
-          const mv = brandMovements[cat][d];
-          const entries = mv.entries || [];
-          const exits   = mv.exits   || [];
-          const firstEverCount = entries.filter(e => e.isFirstEver).length;
-          const summary = [
-            entries.length ? '🆕 진입 ' + entries.length + '개' : '',
-            firstEverCount ? '(★ 첫등장 ' + firstEverCount + '개 포함)' : '',
-            exits.length   ? '👋 이탈 ' + exits.length + '개' : '',
-          ].filter(Boolean).join(' ');
-
-          const entryRows = entries.map(e =>
-            '<tr>' +
-            '<td>' + (e.isFirstEver ? '<span class="tag t-first">★ 첫등장</span> ' : '<span class="tag t-other">재진입</span> ') +
-            '<strong>' + e.name + '</strong></td>' +
-            '<td>' + e.rank + '위</td></tr>'
-          ).join('');
-          const exitRows = exits.map(e =>
-            '<tr><td><span class="tag t-exit">이탈</span> ' + e.name + '</td>' +
-            '<td style="color:#999;">' + e.lastRank + '위 → 없음</td></tr>'
-          ).join('');
-
-          return '<details style="margin-bottom:8px;" ' + (d===allMvDates[0]?'open':'') + '>' +
-            '<summary style="cursor:pointer;padding:9px 14px;background:#f8f9fa;border:1px solid #e0e0e0;' +
-            'border-radius:8px;list-style:none;display:flex;justify-content:space-between;align-items:center;">' +
-            '<span style="font-weight:700;">📅 ' + d + '</span>' +
-            '<span style="font-size:12px;color:#666;">' + summary + ' ▾</span>' +
-            '</summary>' +
-            '<div class="mv-grid">' +
-            (entryRows
-              ? '<div><p style="font-size:12px;font-weight:700;color:#1565c0;margin-bottom:6px;">🆕 신규 진입 (' + entries.length + ')</p>' +
-                '<table><thead><tr><th>브랜드</th><th>순위</th></tr></thead><tbody>' + entryRows + '</tbody></table></div>'
-              : '<div><p class="no-data" style="padding:20px 0;">신규 진입 없음</p></div>'
-            ) +
-            (exitRows
-              ? '<div><p style="font-size:12px;font-weight:700;color:#c62828;margin-bottom:6px;">👋 이탈 (' + exits.length + ')</p>' +
-                '<table><thead><tr><th>브랜드</th><th>전일 순위</th></tr></thead><tbody>' + exitRows + '</tbody></table></div>'
-              : '<div><p class="no-data" style="padding:20px 0;">이탈 없음</p></div>'
-            ) +
-            '</div></details>';
-        }).join('');
-    }).join('<hr style="border:none;border-top:1px solid #eee;margin:16px 0;">') }
-  </div>
 
 </div>
 
@@ -660,7 +547,7 @@ function switchCat(cat, btn) {
 
   // 키워드 검색 탭 처리
   const kwSection = document.getElementById('keyword-search-section');
-  const mainCards = ['brand-analysis-card','brand-movement-card'];
+  const mainCards = ['brand-analysis-card'];
   if (cat === 'keyword') {
     kwSection.style.display = 'block';
     document.querySelectorAll('[data-cat]').forEach(el => el.style.display = 'none');
