@@ -366,45 +366,11 @@ tr:hover td{background:#f9fdf9;}
     <button class="cat-tab" onclick="switchCat('keyword',this)">🔍 키워드 검색</button>
   </div>
 
-  <!-- 오특 배너 (카테고리별 표시) -->
-  <div id="otuk-banners">
-    ${categories.map(cat => {
-      const hasOtuk = otukDates[cat]?.includes(latestDate);
-      if (!hasOtuk) return '';
-      const items = (byCategDate[cat]?.[latestDate] || []).filter(p => p.has_otuk === true || p.has_otuk === 'true');
-      return `<div class="otuk-banner" data-cat="${cat}">
-        <div class="ico">🔥</div>
-        <div>
-          <h3>[${catLabels[cat]||cat}] 오늘 오특(오늘의 특가) 진행 중!</h3>
-          <p>${items.slice(0,5).map(p=>`${p.brand_name_raw}(${p.rank}위)`).join(' · ')}</p>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>
-
-  <!-- 요약 통계 -->
-  <div class="grid3" id="stats-area">
-    ${categories.map(cat => {
-      const todaySnaps = byCategDate[cat]?.[latestDate] || [];
-      return `<div class="stat s-green" data-cat="${cat}">
-        <div class="n">${todaySnaps.length}</div>
-        <div class="l">${catLabels[cat]||cat} 수집 상품</div>
-      </div>`;
-    }).join('')}
-    <div class="stat s-orange">
-      <div class="n">${Object.values(otukDates).reduce((s,v)=>s+v.length,0)}</div>
-      <div class="l">누적 오특 진행일 🔥</div>
-    </div>
-  </div>
-
-  <!-- TOP10 + 순위 변동 (카테고리별) -->
+  <!-- TOP10 (카테고리별) -->
   ${categories.map(cat => {
     const todaySnaps  = byCategDate[cat]?.[latestDate] || [];
-    const catChanges  = todayChanges.filter(c => c._category === cat);
-    const risers  = catChanges.filter(c => +c.rank_change > 0).sort((a,b)=>+b.rank_change - +a.rank_change).slice(0,5);
-    const fallers = catChanges.filter(c => +c.rank_change < 0).sort((a,b)=>+a.rank_change - +b.rank_change).slice(0,5);
 
-    return `<div class="grid2 cat-section" data-cat="${cat}">
+    return `<div class="cat-section" data-cat="${cat}">
       <div class="card">
         <h2>🏆 ${catLabels[cat]||cat} 오늘 TOP 10</h2>
         <div class="tbl-wrap"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>판매가</th><th>할인</th><th>배지</th></tr></thead><tbody>
@@ -426,40 +392,6 @@ tr:hover td{background:#f9fdf9;}
           </tr>`;
         }).join('')}
         </tbody></table></div>
-      </div>
-
-      <div class="card">
-        <h2>🔄 ${catLabels[cat]||cat} 순위 변동</h2>
-        ${risers.length === 0 && fallers.length === 0
-          ? '<p class="no-data">전일 데이터가 쌓이면 표시됩니다.</p>'
-          : `<div style="overflow-x:auto;"><table><thead><tr><th>브랜드</th><th>상품명</th><th>오늘</th><th>전일</th><th>변동</th></tr></thead><tbody>
-            ${risers.map(r=>`<tr>
-              <td><a href="#" onclick="selectBrand('${cat}','${(r._brand_name||r.brand_key).replace(/'/g,"\\'")}');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">${r._brand_name||r.brand_key}</a></td>
-              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="${(r._product_name||'').replace(/"/g,'&quot;')}">${r._product_name||'-'}</td>
-              <td>${r.today_rank}위</td><td>${r.yesterday_rank}위</td><td class="up">▲ ${r.rank_change}</td>
-            </tr>`).join('')}
-            ${fallers.map(r=>`<tr>
-              <td><a href="#" onclick="selectBrand('${cat}','${(r._brand_name||r.brand_key).replace(/'/g,"\\'")}');return false;" style="color:#1b4332;font-weight:600;text-decoration:none;">${r._brand_name||r.brand_key}</a></td>
-              <td style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="${(r._product_name||'').replace(/"/g,'&quot;')}">${r._product_name||'-'}</td>
-              <td>${r.today_rank}위</td><td>${r.yesterday_rank}위</td><td class="dn">▼ ${Math.abs(+r.rank_change)}</td>
-            </tr>`).join('')}
-          </tbody></table></div>`
-        }
-        ${(() => {
-          const mv = brandMovements[cat]?.[latestDate];
-          if (!mv) return '';
-          const entryRows = (mv.entries||[]).map(e =>
-            '<tr><td>' + (e.isFirstEver ? '<span class="tag t-first">★ 첫등장</span> ' : '') +
-            '<strong>' + e.name + '</strong></td><td>' + e.rank + '위</td></tr>'
-          ).join('');
-          const exitRows = (mv.exits||[]).map(e =>
-            '<tr><td>' + e.name + '</td><td style="color:#999;">' + e.lastRank + '위 → 이탈</td></tr>'
-          ).join('');
-          return (entryRows ? '<p style="font-size:12px;font-weight:700;color:#1565c0;margin:12px 0 6px;">🆕 오늘 신규 진입</p>' +
-            '<table><thead><tr><th>브랜드</th><th>순위</th></tr></thead><tbody>' + entryRows + '</tbody></table>' : '') +
-            (exitRows ? '<p style="font-size:12px;font-weight:700;color:#c62828;margin:12px 0 6px;">👋 오늘 이탈</p>' +
-            '<table><thead><tr><th>브랜드</th><th>전일 순위</th></tr></thead><tbody>' + exitRows + '</tbody></table>' : '');
-        })()}
       </div>
     </div>`;
   }).join('')}
@@ -621,71 +553,6 @@ tr:hover td{background:#f9fdf9;}
     </div>`;
   }).join('')}
 
-  <!-- 오특 이력 -->
-  <div class="card full" id="otuk-history-card">
-    <h2>🔥 오특 진행 이력 — 상품별 가격 변동</h2>
-    ${Object.values(otukDates).every(v=>v.length===0)
-      ? '<p class="no-data">아직 오특 이벤트가 감지되지 않았어요.</p>'
-      : categories.map(cat => {
-          const dates = (otukDates[cat]||[]).sort().reverse();
-          if (!dates.length) return '';
-          const catDates = allDates.filter(d => byCategDate[cat]?.[d]);
-          const isOtuk   = v => v === true || v === 'true';
-
-          return '<p style="font-weight:700;color:#1b4332;margin:0 0 12px;">' + (catLabels[cat]||cat) + '</p>' +
-          dates.map(d => {
-            const items = (byCategDate[cat]?.[d]||[]).filter(p => isOtuk(p.has_otuk));
-            const dIdx  = catDates.indexOf(d);
-            const prevD = dIdx > 0 ? catDates[dIdx-1] : null;
-            const nextD = dIdx < catDates.length-1 ? catDates[dIdx+1] : null;
-
-            const rows = items.map(p => {
-              const prevP = prevD ? (byCategDate[cat][prevD]||[]).find(x => x.brand_name_raw===p.brand_name_raw && x.product_name_raw===p.product_name_raw) : null;
-              const nextP = nextD ? (byCategDate[cat][nextD]||[]).find(x => x.brand_name_raw===p.brand_name_raw && x.product_name_raw===p.product_name_raw) : null;
-              const cur      = p.sale_price   ? +p.sale_price   : null;
-              const listP    = p.list_price   ? +p.list_price   : null;
-              const discRate = p.price_discount_rate ? Math.round(+p.price_discount_rate * 100) : null;
-              const prev     = prevP?.sale_price ? +prevP.sale_price : null;
-              const next     = nextP?.sale_price ? +nextP.sale_price : null;
-              const diff     = (cur !== null && prev !== null) ? cur - prev : null;
-              const diffCls  = diff === null ? '' : diff > 0 ? 'price-up' : diff < 0 ? 'price-dn' : '';
-              const diffStr  = diff === null ? '-' : (diff > 0 ? '+' : '') + diff.toLocaleString() + '원';
-              const rc       = +p.rank===1?'r1':+p.rank===2?'r2':+p.rank===3?'r3':'rn';
-              const curCell  = (cur !== null ? cur.toLocaleString()+'원' : '—') +
-                (discRate !== null ? '&nbsp;<span class="tag t-otuk">오특</span>&nbsp;<span style="font-size:11px;color:#e65100;font-weight:700;">' + discRate + '% 할인</span>' : '&nbsp;<span class="tag t-otuk">오특</span>') +
-                (listP !== null && discRate !== null ? '<br><span style="font-size:11px;color:#aaa;text-decoration:line-through;">정가 ' + listP.toLocaleString() + '원</span>' : '');
-              return '<tr>' +
-                '<td><span class="rb ' + rc + '">' + p.rank + '</span></td>' +
-                '<td>' + p.brand_name_raw + '</td>' +
-                '<td style="max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="' + p.product_name_raw + '">' + p.product_name_raw + '</td>' +
-                '<td>' + (prev !== null ? prev.toLocaleString()+'원' : prevD ? '—' : '(데이터없음)') + '</td>' +
-                '<td style="font-weight:700;">' + curCell + '</td>' +
-                '<td>' + (next !== null ? next.toLocaleString()+'원' : nextD ? '—' : '(최신)') + '</td>' +
-                '<td class="' + diffCls + '">' + diffStr + '</td>' +
-                '</tr>';
-            }).join('');
-
-            return '<details style="margin-bottom:10px;" ' + (d===dates[0]?'open':'') + '>' +
-              '<summary style="cursor:pointer;padding:10px 14px;background:#fff8f5;border:1px solid #ffd5bb;border-radius:8px;font-weight:700;color:#e65100;list-style:none;display:flex;justify-content:space-between;align-items:center;">' +
-              '<span>📅 ' + d + '&nbsp;&nbsp;🔥 오특 진행</span>' +
-              '<span style="font-size:12px;font-weight:400;color:#999;">' + items.length + '개 상품 ▾</span>' +
-              '</summary>' +
-              '<div style="overflow-x:auto;margin-top:8px;">' +
-              (items.length === 0
-                ? '<p class="no-data" style="padding:20px;">오특 상품 데이터를 찾을 수 없습니다.</p>'
-                : '<table><thead><tr>' +
-                  '<th>#</th><th>브랜드</th><th>상품명</th>' +
-                  '<th>전날 (' + (prevD||'—') + ')</th>' +
-                  '<th>오특 당일 (' + d + ')</th>' +
-                  '<th>다음날 (' + (nextD||'—') + ')</th>' +
-                  '<th>전날比 변동</th>' +
-                  '</tr></thead><tbody>' + rows + '</tbody></table>'
-              ) + '</div></details>';
-          }).join('');
-        }).join('')
-    }
-  </div>
-
   <!-- 브랜드 진입 / 이탈 전체 이력 -->
   <div class="card full" id="brand-movement-card">
     <h2>📊 브랜드 진입 / 이탈 전체 이력</h2>
@@ -793,7 +660,7 @@ function switchCat(cat, btn) {
 
   // 키워드 검색 탭 처리
   const kwSection = document.getElementById('keyword-search-section');
-  const mainCards = ['otuk-banners','stats-area','brand-analysis-card','otuk-history-card','brand-movement-card'];
+  const mainCards = ['brand-analysis-card','brand-movement-card'];
   if (cat === 'keyword') {
     kwSection.style.display = 'block';
     document.querySelectorAll('[data-cat]').forEach(el => el.style.display = 'none');
