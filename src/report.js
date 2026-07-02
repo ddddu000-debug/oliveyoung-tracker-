@@ -197,46 +197,38 @@ function buildHtml(D) {
   const { latestDate, allDates, categories, catLabels,
           byCategDate, brandHistory, otukDates, todayChanges, brandMovements, productSummary } = D;
 
-  // ── 키워드 인사이트: 오늘 전체 카테고리 상품명에서 언급 많은 키워드 집계 ──
-  // 마케팅/기획 보일러플레이트는 제외해 제품유형·성분·효능 테마가 드러나게 함
-  const keywordInsight = (() => {
-    const STOP = new Set(['기획','증정','추가','포함','단독','세트','에디션','한정','한정기획','기획전',
-      '더블','리필','대용량','본품','구성','신상','리뉴얼','업그레이드','정품','사은품','쿠폰','세일','오특',
-      '올영','올영픽','월올영픽','픽','증정품','선물','행사','특가','할인','최초','최대','무료','전용','공식',
-      '온라인','단독기획','더블기획','증정기획','기획세트','단품','택1','택2','증량','한정수량','사이즈',
-      'NEW','new','SET','set','AD','ml','g']);
-    const isNoise = t => {
-      if (!t || t.length < 2) return true;                          // 1글자 제외
-      if (/^\d+$/.test(t)) return true;                             // 순수 숫자
-      if (/^\d+(ml|g|kg|매|개|호|정|캡슐|팩|입|미|ea|p|포|프|세|월|일|주|년|호점)?$/i.test(t)) return true; // 숫자+단위/월
-      if (/^[a-z]$/i.test(t)) return true;
-      if (/^택\d+$/.test(t)) return true;                           // 택1, 택2
-      if (/^\d+종$/.test(t)) return true;                           // 2종, 4종 (구성 개수)
-      if (/^\d+위$/.test(t)) return true;                           // 1위 (랭킹 문구)
-      if (/올영픽$/.test(t)) return true;                           // 올영픽, 7월올영픽
-      return false;
-    };
-    const counts = new Map();
-    categories.forEach(cat => {
-      (byCategDate[cat]?.[latestDate] || []).forEach(p => {
-        const brandTokens = new Set((p.brand_name_raw || '').split(/[\s/]+/).filter(Boolean));
-        const cleaned = (p.product_name_raw || '')
-          .replace(/[^0-9a-zA-Z가-힣\s]/g, ' ');   // 한글/영숫자만 남기고 나머지는 공백
-        const tokens = new Set(
-          cleaned.split(/\s+/).map(t => t.trim()).filter(Boolean)
-            .filter(t => !isNoise(t))
-            .filter(t => !STOP.has(t))
-            .filter(t => !brandTokens.has(t))       // 자기 브랜드명 토큰 제외
-        );
-        tokens.forEach(t => counts.set(t, (counts.get(t) || 0) + 1));
-      });
+  // ── 키워드 인사이트: 카테고리별 × 유형별(제품/성분/효능/마케팅) 언급 빈도 집계 ──
+  // 사전(lexicon) 기반 부분일치 — "수분크림"에서 '수분'(효능)·'크림'(제품) 둘 다 카운트.
+  // 언급수 = 해당 키워드를 상품명에 포함한 상품 개수(카테고리 TOP100 기준).
+  const KW_LEX = {
+    '제품': ['토너','세럼','앰플','크림','로션','에센스','미스트','오일','스틱','쿠션','파운데이션','틴트',
+      '립','마스카라','아이라이너','섀도','블러셔','치크','컨실러','파우더','프라이머','클렌징','폼','스크럽',
+      '필링','마스크','팩','패드','샴푸','트리트먼트','컨디셔너','바디워시','바디로션','바디크림','데오드란트',
+      '핸드크림','선크림','선스틱','선세럼','선쿠션','젤','비누','밤','왁스','에어','스프레이'],
+    '성분': ['PDRN','시카','콜라겐','히알루론산','레티놀','나이아신아마이드','세라마이드','판테놀','어성초',
+      '병풀','마데카','펩타이드','비타민','아연','살리실산','스쿠알란','티트리','녹차','프로폴리스','달팽이',
+      '감초','알로에','카페인','아데노신','프로바이오','토코페롤','무씨','쌀','복숭아','도라지','캐모마일','centella'],
+    '효능': ['진정','수분','보습','모공','미백','주름','탄력','리페어','쿨링','각질','트러블','재생','톤업',
+      '영양','볼륨','손상','민감','저자극','약산성','흔적','홍조','촉촉','딥클렌징','세정','지속','커버','매트',
+      '광채','글로우','컬','두피','탈모','향','퍼퓸','리프팅','브라이트닝','안티에이징','수분감','속건조','블랙헤드'],
+    '마케팅': ['올영픽','기획','한정','대용량','증정','단독','1위','1등','NEW','세일','특가','리필','더블',
+      '세트','에디션','신상','리뉴얼','업그레이드','사은품','쿠폰','오특','무료','최초','최대','선물','행사',
+      'PICK','증량','한정수량','베스트','인기','추천'],
+  };
+  const KW_TYPES = ['제품','성분','효능','마케팅'];
+  const keywordByCat = {};
+  categories.forEach(cat => {
+    const names = (byCategDate[cat]?.[latestDate] || []).map(p => (p.product_name_raw || '').toLowerCase());
+    const byType = {};
+    KW_TYPES.forEach(type => {
+      byType[type] = KW_LEX[type]
+        .map(kw => ({ word: kw, count: names.filter(n => n.includes(kw.toLowerCase())).length }))
+        .filter(r => r.count > 0)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8);
     });
-    return [...counts.entries()]
-      .map(([word, count]) => ({ word, count }))
-      .sort((a, b) => b.count - a.count || a.word.localeCompare(b.word))
-      .slice(0, 20);
-  })();
-  const kwMax = keywordInsight[0]?.count || 1;
+    keywordByCat[cat] = byType;
+  });
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -266,15 +258,16 @@ header p{font-size:12px;opacity:.8;margin-top:3px;}
 /* TOP10/100 토글: 11위 이후 행은 기본 숨김(전체 탭=TOP10), 개별 카테고리 탭에서만 표시(TOP100) */
 tr.rank-rest{display:none;}
 body.show-rest tr.rank-rest{display:table-row;}
-/* 키워드 인사이트 막대 리스트 */
-.kw-insight{display:flex;flex-direction:column;gap:7px;}
-.kw-row{display:flex;align-items:center;gap:10px;font-size:13px;}
-.kw-rank{width:22px;text-align:center;color:#aaa;font-weight:700;font-size:12px;flex-shrink:0;}
-.kw-word{width:120px;font-weight:600;color:#1b4332;flex-shrink:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
-.kw-barwrap{flex:1;background:#eef2f0;border-radius:6px;height:16px;overflow:hidden;}
-.kw-bar{display:block;height:100%;background:linear-gradient(90deg,#52b788,#40916c);border-radius:6px;}
-.kw-cnt{width:52px;text-align:right;color:#40916c;font-weight:700;flex-shrink:0;}
-@media(max-width:600px){.kw-word{width:78px;}}
+/* 키워드 인사이트: 유형별 컬럼 + 칩 */
+.kw-types{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+@media(max-width:700px){.kw-types{grid-template-columns:1fr 1fr;}}
+.kw-type-h{font-size:12px;font-weight:800;padding-bottom:5px;margin-bottom:9px;border-bottom:2px solid;}
+.kw-t-prod{color:#2d6a4f;border-color:#95d5b2;}
+.kw-t-ingr{color:#1565c0;border-color:#90caf9;}
+.kw-t-effi{color:#c2185b;border-color:#f48fb1;}
+.kw-t-mkt {color:#e65100;border-color:#ffcc80;}
+.kw-chip{display:inline-block;background:#f4f6f9;border-radius:14px;padding:4px 10px;margin:0 5px 6px 0;font-size:12px;color:#333;}
+.kw-chip b{margin-left:5px;color:#40916c;font-weight:700;}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px;}
 .full{grid-column:1/-1;}
@@ -419,21 +412,29 @@ tr:hover td{background:#f9fdf9;}
     <button class="cat-tab" onclick="switchCat('keyword',this)">🔍 키워드 검색</button>
   </div>
 
-  <!-- 키워드 인사이트 (전체 탭 전용) -->
-  <div class="card full" id="keyword-insight-card">
-    <h2>🔤 오늘의 키워드 인사이트 <span style="font-weight:400;font-size:12px;color:#888;">— 전체 카테고리 TOP100 상품명 언급 빈도 (상위 20)</span></h2>
-    ${keywordInsight.length === 0
-      ? '<p class="no-data">키워드를 추출할 데이터가 없어요.</p>'
-      : `<div class="kw-insight">
-        ${keywordInsight.map((k,i) => `<div class="kw-row">
-          <span class="kw-rank">${i+1}</span>
-          <span class="kw-word" title="${k.word}">${k.word}</span>
-          <span class="kw-barwrap"><span class="kw-bar" style="width:${Math.max(4,Math.round(k.count/kwMax*100))}%"></span></span>
-          <span class="kw-cnt">${k.count}회</span>
-        </div>`).join('')}
-      </div>`
-    }
-  </div>
+  <!-- 키워드 인사이트 (카테고리별 × 유형별) -->
+  ${categories.map(cat => {
+    const byType = keywordByCat[cat] || {};
+    const typeClass = { '제품':'prod', '성분':'ingr', '효능':'effi', '마케팅':'mkt' };
+    const hasAny = KW_TYPES.some(t => (byType[t]||[]).length > 0);
+    return `<div class="card cat-section" data-cat="${cat}">
+      <h2>🔤 ${catLabels[cat]||cat} 키워드 인사이트 <span style="font-weight:400;font-size:12px;color:#888;">— 상품명 언급 빈도(상품 수)</span></h2>
+      ${!hasAny
+        ? '<p class="no-data">추출된 키워드가 없어요.</p>'
+        : `<div class="kw-types">
+          ${KW_TYPES.map(type => {
+            const rows = byType[type] || [];
+            return `<div class="kw-type">
+              <div class="kw-type-h kw-t-${typeClass[type]}">${type}</div>
+              ${rows.length === 0
+                ? '<span class="no-data" style="font-size:12px;">-</span>'
+                : rows.map(r => `<span class="kw-chip">${r.word}<b>${r.count}</b></span>`).join('')}
+            </div>`;
+          }).join('')}
+        </div>`
+      }
+    </div>`;
+  }).join('')}
 
   <!-- TOP10 (카테고리별) -->
   ${categories.map(cat => {
@@ -617,10 +618,6 @@ function switchCat(cat, btn) {
   // 키워드 검색 탭 처리
   const kwSection = document.getElementById('keyword-search-section');
   const mainCards = ['brand-analysis-card'];
-  // 키워드 인사이트 카드는 '전체' 탭에서만 표시
-  const kwInsight = document.getElementById('keyword-insight-card');
-  if (kwInsight) kwInsight.style.display = (cat === 'all') ? '' : 'none';
-
   if (cat === 'keyword') {
     kwSection.style.display = 'block';
     document.querySelectorAll('[data-cat]').forEach(el => el.style.display = 'none');
