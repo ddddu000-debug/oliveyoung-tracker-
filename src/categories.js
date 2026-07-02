@@ -6,9 +6,12 @@ const CATEGORIES = [
   {
     name:       'skincare',
     label:      '스킨케어',
-    singlePage: false,
-    baseUrl:    'https://www.oliveyoung.co.kr/store/display/getMCategoryList.do',
-    params:     'dispCatNo=100000100010013&fltDispCatNo=&prdSort=01&rowsPerPage=24&searchTypeSort=btn_thumb&plusButtonFlag=N&isLoginCnt=0&aShowCnt=0&bShowCnt=0&cShowCnt=0&trackingCd=Cat100000100010013_Ranking',
+    singlePage: true,   // 한 페이지에 100개 전부 있음
+    // 기존엔 getMCategoryList(dispCatNo=100000100010013)를 썼는데 이는 "스킨/토너" 세부
+    // 카테고리 목록이라 토너만 나왔음. 실제 스킨케어 판매 랭킹과 다름 → 다른 카테고리와 동일한
+    // getBestList 랭킹 엔드포인트(fltDispCatNo=10000010001=스킨케어)로 통일.
+    baseUrl:    'https://www.oliveyoung.co.kr/store/main/getBestList.do',
+    params:     'dispCatNo=900000100100001&fltDispCatNo=10000010001&pageIdx=1&rowsPerPage=8',
   },
   {
     name:       'bodycare',
