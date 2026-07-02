@@ -216,19 +216,33 @@ function buildHtml(D) {
       'PICK','증량','한정수량','베스트','인기','추천'],
   };
   const KW_TYPES = ['제품','성분','효능','마케팅'];
-  const keywordByCat = {};
-  categories.forEach(cat => {
-    const names = (byCategDate[cat]?.[latestDate] || []).map(p => (p.product_name_raw || '').toLowerCase());
-    const byType = {};
-    KW_TYPES.forEach(type => {
-      byType[type] = KW_LEX[type]
-        .map(kw => ({ word: kw, count: names.filter(n => n.includes(kw.toLowerCase())).length }))
-        .filter(r => r.count > 0)
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 8);
+
+  // 월 목록 (YYYY-MM, 오름차순) + 월별×카테고리×유형 집계
+  const kwMonths = [...new Set(allDates.map(d => d.slice(0, 7)))].sort();
+  // 월별 집계: 해당 월에 등장한 고유 상품(상품명 기준) 중 키워드 포함 상품 수
+  const keywordByMonth = {};
+  kwMonths.forEach(month => {
+    const monthDates = allDates.filter(d => d.slice(0, 7) === month);
+    const perCat = {};
+    categories.forEach(cat => {
+      const nameSet = new Set();
+      monthDates.forEach(d => (byCategDate[cat]?.[d] || []).forEach(p => {
+        if (p.product_name_raw) nameSet.add(p.product_name_raw.toLowerCase());
+      }));
+      const names = [...nameSet];
+      const byType = {};
+      KW_TYPES.forEach(type => {
+        byType[type] = KW_LEX[type]
+          .map(kw => ({ word: kw, count: names.filter(n => n.includes(kw.toLowerCase())).length }))
+          .filter(r => r.count > 0)
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 8);
+      });
+      perCat[cat] = byType;
     });
-    keywordByCat[cat] = byType;
+    keywordByMonth[month] = perCat;
   });
+  const kwLatestMonth = kwMonths[kwMonths.length - 1] || '';
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -258,6 +272,12 @@ header p{font-size:12px;opacity:.8;margin-top:3px;}
 /* TOP10/100 토글: 11위 이후 행은 기본 숨김(전체 탭=TOP10), 개별 카테고리 탭에서만 표시(TOP100) */
 tr.rank-rest{display:none;}
 body.show-rest tr.rank-rest{display:table-row;}
+/* 키워드 인사이트: 월 선택 바 */
+.kw-month-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border-radius:12px;
+  padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:18px;font-weight:700;color:#1b4332;font-size:14px;}
+.kw-month-bar select{padding:6px 12px;border-radius:8px;border:1.5px solid #b7e4c7;background:#f6fbf8;
+  font-size:13px;font-weight:600;color:#1b4332;cursor:pointer;}
+.kw-month-bar .kw-hint{font-weight:400;font-size:12px;color:#888;margin-left:auto;}
 /* 키워드 인사이트: 유형별 컬럼 + 칩 */
 .kw-types{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
 @media(max-width:700px){.kw-types{grid-template-columns:1fr 1fr;}}
@@ -412,29 +432,23 @@ tr:hover td{background:#f9fdf9;}
     <button class="cat-tab" onclick="switchCat('keyword',this)">🔍 키워드 검색</button>
   </div>
 
-  <!-- 키워드 인사이트 (카테고리별 × 유형별) -->
-  ${categories.map(cat => {
-    const byType = keywordByCat[cat] || {};
-    const typeClass = { '제품':'prod', '성분':'ingr', '효능':'effi', '마케팅':'mkt' };
-    const hasAny = KW_TYPES.some(t => (byType[t]||[]).length > 0);
-    return `<div class="card cat-section" data-cat="${cat}">
-      <h2>🔤 ${catLabels[cat]||cat} 키워드 인사이트 <span style="font-weight:400;font-size:12px;color:#888;">— 상품명 언급 빈도(상품 수)</span></h2>
-      ${!hasAny
-        ? '<p class="no-data">추출된 키워드가 없어요.</p>'
-        : `<div class="kw-types">
-          ${KW_TYPES.map(type => {
-            const rows = byType[type] || [];
-            return `<div class="kw-type">
-              <div class="kw-type-h kw-t-${typeClass[type]}">${type}</div>
-              ${rows.length === 0
-                ? '<span class="no-data" style="font-size:12px;">-</span>'
-                : rows.map(r => `<span class="kw-chip">${r.word}<b>${r.count}</b></span>`).join('')}
-            </div>`;
-          }).join('')}
-        </div>`
-      }
-    </div>`;
-  }).join('')}
+  <!-- 키워드 인사이트: 월 선택 바 -->
+  <div id="kw-month-bar" class="kw-month-bar">
+    <span>🔤 키워드 인사이트 &nbsp;·&nbsp; 📅 기간</span>
+    <select id="kw-month-sel" onchange="renderKeywords(this.value)">
+      ${kwMonths.slice().reverse().map(m => {
+        const [y,mo] = m.split('-');
+        return `<option value="${m}"${m===kwLatestMonth?' selected':''}>${y}년 ${+mo}월</option>`;
+      }).join('')}
+    </select>
+    <span class="kw-hint">상품명 언급 빈도(해당 월 등장 상품 수)</span>
+  </div>
+
+  <!-- 키워드 인사이트: 카테고리별 카드 (내용은 renderKeywords()가 채움) -->
+  ${categories.map(cat => `<div class="card cat-section kw-card" data-cat="${cat}">
+    <h2>🔤 ${catLabels[cat]||cat} 키워드 인사이트</h2>
+    <div class="kw-types" id="kwtypes-${cat}"></div>
+  </div>`).join('')}
 
   <!-- TOP10 (카테고리별) -->
   ${categories.map(cat => {
@@ -575,6 +589,10 @@ const BRAND_HISTORY = ${JSON.stringify(D.brandHistory)};
 const ALL_DATES     = ${JSON.stringify(D.allDates)};
 const CAT_LABELS    = ${JSON.stringify(D.catLabels)};
 const PRODUCT_SUMMARY = ${JSON.stringify(productSummary)};
+// 키워드 인사이트: 월별 × 카테고리 × 유형 집계 데이터
+const KEYWORD_BY_MONTH = ${JSON.stringify(keywordByMonth)};
+const KW_TYPES = ${JSON.stringify(KW_TYPES)};
+const KW_CATS  = ${JSON.stringify(categories)};
 // 카테고리별 전체 기간 브랜드 이름 목록 (순위 이탈 브랜드 포함)
 const BRAND_NAMES_BY_CAT = ${JSON.stringify((() => {
   const out = {};
@@ -617,11 +635,13 @@ function switchCat(cat, btn) {
 
   // 키워드 검색 탭 처리
   const kwSection = document.getElementById('keyword-search-section');
+  const kwMonthBar = document.getElementById('kw-month-bar');
   const mainCards = ['brand-analysis-card'];
   if (cat === 'keyword') {
     kwSection.style.display = 'block';
     document.querySelectorAll('[data-cat]').forEach(el => el.style.display = 'none');
     mainCards.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+    if (kwMonthBar) kwMonthBar.style.display = 'none';
     document.body.classList.remove('show-rest');
     document.getElementById('kw-input').focus();
     return;
@@ -630,6 +650,7 @@ function switchCat(cat, btn) {
   // 일반 탭: 키워드 검색 섹션 숨기기
   kwSection.style.display = 'none';
   mainCards.forEach(id => { const el=document.getElementById(id); if(el) el.style.display=''; });
+  if (kwMonthBar) kwMonthBar.style.display = '';
 
   // 전체 탭 = TOP10만 / 개별 카테고리 탭 = TOP100 표시
   const showRest = cat !== 'all';
@@ -655,6 +676,31 @@ function switchCat(cat, btn) {
 // (차트는 로드 시 가시 상태로 생성되어 크기가 정상 계산된 뒤 여기서 숨겨지므로,
 //  이후 카테고리 탭에서 다시 보일 때 레이아웃이 깨지지 않는다.)
 document.querySelectorAll('.cat-only').forEach(el => { el.style.display = 'none'; });
+
+// ── 키워드 인사이트: 선택 월의 카테고리별 카드 렌더링 ──────────────
+const KW_TYPE_CLASS = { '제품':'prod', '성분':'ingr', '효능':'effi', '마케팅':'mkt' };
+function renderKeywords(month) {
+  const perCat = KEYWORD_BY_MONTH[month] || {};
+  KW_CATS.forEach(cat => {
+    const box = document.getElementById('kwtypes-' + cat);
+    if (!box) return;
+    const byType = perCat[cat] || {};
+    const hasAny = KW_TYPES.some(t => (byType[t] || []).length > 0);
+    if (!hasAny) {
+      box.innerHTML = '<p class="no-data" style="grid-column:1/-1;">이 달 추출된 키워드가 없어요.</p>';
+      return;
+    }
+    box.innerHTML = KW_TYPES.map(type => {
+      const rows = byType[type] || [];
+      const chips = rows.length === 0
+        ? '<span class="no-data" style="font-size:12px;">-</span>'
+        : rows.map(r => '<span class="kw-chip">' + r.word + '<b>' + r.count + '</b></span>').join('');
+      return '<div class="kw-type"><div class="kw-type-h kw-t-' + KW_TYPE_CLASS[type] + '">' + type + '</div>' + chips + '</div>';
+    }).join('');
+  });
+}
+// 초기 렌더: 최신 월
+(function(){ const sel = document.getElementById('kw-month-sel'); if (sel && sel.value) renderKeywords(sel.value); })();
 
 // ── 키워드 검색 ───────────────────────────────────────────────────
 const KW_CAT_TAG = {
