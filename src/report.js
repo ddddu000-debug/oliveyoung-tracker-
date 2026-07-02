@@ -413,7 +413,7 @@ tr:hover td{background:#f9fdf9;}
       tension: 0.3, spanGaps: true, pointRadius: 4,
     }));
 
-    return `<div class="card cat-section" data-cat="${cat}">
+    return `<div class="card cat-section cat-only" data-cat="${cat}">
       <h2>📈 ${catLabels[cat]||cat} TOP10 순위 추이</h2>
       ${recentDates.length < 2
         ? '<p class="no-data">데이터가 2일 이상 쌓이면 차트가 표시됩니다.</p>'
@@ -570,8 +570,11 @@ function switchCat(cat, btn) {
   document.querySelectorAll('.top-n').forEach(el => { el.textContent = showRest ? '100' : '10'; });
 
   // data-cat 속성이 있는 모든 요소 표시/숨김
+  // (cat-only 요소는 개별 카테고리 탭에서만 표시 — 전체 탭에서는 숨김)
   document.querySelectorAll('[data-cat]').forEach(el => {
-    el.style.display = (cat === 'all' || cat === el.dataset.cat) ? '' : 'none';
+    const matchCat  = (cat === 'all' || cat === el.dataset.cat);
+    const hideInAll = (cat === 'all' && el.classList.contains('cat-only'));
+    el.style.display = (matchCat && !hideInAll) ? '' : 'none';
   });
 
   // 브랜드 드롭다운 카테고리 동기화
@@ -580,6 +583,11 @@ function switchCat(cat, btn) {
     refreshBrandList();
   }
 }
+
+// 초기 상태: 기본 탭이 '전체'이므로 cat-only(순위 추이 차트) 숨김.
+// (차트는 로드 시 가시 상태로 생성되어 크기가 정상 계산된 뒤 여기서 숨겨지므로,
+//  이후 카테고리 탭에서 다시 보일 때 레이아웃이 깨지지 않는다.)
+document.querySelectorAll('.cat-only').forEach(el => { el.style.display = 'none'; });
 
 // ── 키워드 검색 ───────────────────────────────────────────────────
 const KW_CAT_TAG = {
