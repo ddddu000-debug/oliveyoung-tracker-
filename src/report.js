@@ -222,6 +222,9 @@ header p{font-size:12px;opacity:.8;margin-top:3px;}
 /* 카드 */
 .card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:18px;}
 .card h2{font-size:14px;font-weight:700;color:#1b4332;margin-bottom:14px;}
+/* TOP10/100 토글: 11위 이후 행은 기본 숨김(전체 탭=TOP10), 개별 카테고리 탭에서만 표시(TOP100) */
+tr.rank-rest{display:none;}
+body.show-rest tr.rank-rest{display:table-row;}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px;}
 .full{grid-column:1/-1;}
@@ -372,16 +375,16 @@ tr:hover td{background:#f9fdf9;}
 
     return `<div class="cat-section" data-cat="${cat}">
       <div class="card">
-        <h2>🏆 ${catLabels[cat]||cat} 오늘 TOP 10</h2>
+        <h2>🏆 ${catLabels[cat]||cat} 오늘 TOP <span class="top-n">10</span></h2>
         <div class="tbl-wrap"><table><thead><tr><th>#</th><th>브랜드</th><th>상품명</th><th>판매가</th><th>할인</th><th>배지</th></tr></thead><tbody>
-        ${todaySnaps.slice(0,10).map(p => {
+        ${todaySnaps.slice(0,100).map(p => {
           const rc  = +p.rank === 1 ? 'r1' : +p.rank === 2 ? 'r2' : +p.rank === 3 ? 'r3' : 'rn';
           const disc = p.price_discount_rate ? Math.round(+p.price_discount_rate*100)+'%' : '-';
           const badges = (p.badges||'').split(',').filter(Boolean).map(b => {
             const cls = b==='오특'?'t-otuk':b==='세일'?'t-sale':b==='쿠폰'?'t-coupon':'t-other';
             return `<span class="tag ${cls}">${b}</span>`;
           }).join('');
-          return `<tr>
+          return `<tr class="${+p.rank > 10 ? 'rank-rest' : ''}">
             <td><span class="rb ${rc}">${p.rank}</span></td>
             <td><a href="#" onclick="selectBrand('${cat}','${p.brand_name_raw.replace(/'/g,"\\'")}');return false;"
               style="color:#1b4332;font-weight:600;text-decoration:none;">${p.brand_name_raw}</a></td>
@@ -552,6 +555,7 @@ function switchCat(cat, btn) {
     kwSection.style.display = 'block';
     document.querySelectorAll('[data-cat]').forEach(el => el.style.display = 'none');
     mainCards.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+    document.body.classList.remove('show-rest');
     document.getElementById('kw-input').focus();
     return;
   }
@@ -559,6 +563,11 @@ function switchCat(cat, btn) {
   // 일반 탭: 키워드 검색 섹션 숨기기
   kwSection.style.display = 'none';
   mainCards.forEach(id => { const el=document.getElementById(id); if(el) el.style.display=''; });
+
+  // 전체 탭 = TOP10만 / 개별 카테고리 탭 = TOP100 표시
+  const showRest = cat !== 'all';
+  document.body.classList.toggle('show-rest', showRest);
+  document.querySelectorAll('.top-n').forEach(el => { el.textContent = showRest ? '100' : '10'; });
 
   // data-cat 속성이 있는 모든 요소 표시/숨김
   document.querySelectorAll('[data-cat]').forEach(el => {
