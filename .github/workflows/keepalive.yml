@@ -1,0 +1,32 @@
+name: Supabase Keepalive
+
+# 스크래퍼와 독립적으로 Supabase를 주기적으로 핑해 7일 자동정지를 예방한다.
+# (daily-scrape가 며칠 실패해도 이 워크플로우는 Playwright/올리브영과 무관하게 계속 동작)
+on:
+  schedule:
+    - cron: '0 6 * * 1,4'   # 매주 월·목 UTC 06:00 (KST 15:00) — 최대 간격 ~4일 (< 7일 한도)
+  workflow_dispatch:         # 버튼/수동 실행
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 패키지 설치
+        run: npm install
+
+      - name: .env 파일 생성
+        run: |
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
+          echo "SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}" >> .env
+
+      - name: Supabase 핑
+        run: node src/keepalive.js
