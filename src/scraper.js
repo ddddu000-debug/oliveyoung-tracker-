@@ -34,7 +34,8 @@ async function fetchTodaysOtukGoodsNos(page) {
   console.log('\n[오특] 오늘의 특가 상품 목록 수집 중...');
 
   // 세션 쿠키 / Referer 확보를 위해 hotdeal 페이지 먼저 방문
-  await page.goto(HOTDEAL_LIST_URL, { waitUntil: 'networkidle', timeout: 30000 });
+  // 주의: 올리브영은 상시 연결(analytics/polling)을 유지하므로 'networkidle'는 절대 발생하지 않음 → 'domcontentloaded' 사용
+  await page.goto(HOTDEAL_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForTimeout(1000);
 
   // 오늘 날짜 (yyyyMMdd)
@@ -75,39 +76,68 @@ async function fetchTodaysOtukGoodsNos(page) {
   return allGoodsNos;
 }
 
-// 페이지에서 상품 목록 추출
-async function extractProducts(page) {
-  return page.evaluate(() => {
-    const items = document.querySelectorAll('.cate_prd_list li');
-    return Array.from(items).map(item => {
-      const brandEl     = item.querySelector('.tx_brand');
-      const nameEl      = item.querySelector('.tx_name');
-      const salePriceEl = item.querySelector('.tx_cur .tx_num');
-      const listPriceEl = item.querySelector('.tx_org .tx_num');
-      const linkEl      = item.querySelector('a.goods_btn_link') || item.querySelector('a');
-      const badgeEls    = item.querySelectorAll('.icon_flag');
-      const soldOutEl   = item.querySelector('.soldout') || item.querySelector('[class*="sold"]');
-      // 오특 전용 배지 (.newOyflag) 도 확인
-      const otukEl      = item.querySelector('.newOyflag');
+// 상품 목록 페이지를 fetch로 가져와 DOMParser로 파싱해 상품 배열을 반환.
+// (page.goto 네비게이션은 데이터센터 IP에서 domcontentloaded가 발생하지 않아 타임아웃되는
+//  안티봇 이슈가 있음 — 반면 page 컨텍스트 내부 fetch는 정상 동작하므로 이 방식으로 우회한다.)
+// 빈 목록(레이트리밋 추정)이면 백오프 후 재시도. 반환값: 추출된 상품 배열.
+async function fetchProducts(page, url, retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    const result = await page.evaluate(async (u) => {
+      try {
+        const res  = await fetch(u, { credentials: 'include' });
+        const html = await res.text();
+        const doc  = new DOMParser().parseFromString(html, 'text/html');
+        const items = doc.querySelectorAll('.cate_prd_list li');
+        const parsed = Array.from(items).map(item => {
+          const brandEl     = item.querySelector('.tx_brand');
+          const nameEl      = item.querySelector('.tx_name');
+          const salePriceEl = item.querySelector('.tx_cur .tx_num');
+          const listPriceEl = item.querySelector('.tx_org .tx_num');
+          const linkEl      = item.querySelector('a.goods_btn_link') || item.querySelector('a');
+          const badgeEls    = item.querySelectorAll('.icon_flag');
+          const soldOutEl   = item.querySelector('.soldout') || item.querySelector('[class*="sold"]');
+          // 오특 전용 배지 (.newOyflag) 도 확인
+          const otukEl      = item.querySelector('.newOyflag');
 
-      const badgeTexts = Array.from(badgeEls).map(b => b.textContent.trim()).filter(Boolean);
-      if (otukEl && !badgeTexts.includes('오특')) {
-        const otukText = otukEl.textContent.trim();
-        if (otukText.includes('오특')) badgeTexts.unshift('오특');
+          const badgeTexts = Array.from(badgeEls).map(b => b.textContent.trim()).filter(Boolean);
+          if (otukEl && !badgeTexts.includes('오특')) {
+            const otukText = otukEl.textContent.trim();
+            if (otukText.includes('오특')) badgeTexts.unshift('오특');
+          }
+
+          return {
+            brand_name_raw:   brandEl?.textContent?.trim() || '',
+            product_name_raw: nameEl?.textContent?.trim() || '',
+            sale_price_raw:   salePriceEl?.textContent?.trim() || '',
+            list_price_raw:   listPriceEl?.textContent?.trim() || '',
+            product_url:      linkEl?.href || '',
+            badges:           badgeTexts.join(','),
+            is_sold_out:      !!soldOutEl,
+            has_newOyflag:    !!item.querySelector('.newOyflag'),
+          };
+        });
+        return { status: res.status, count: items.length, items: parsed };
+      } catch (e) {
+        return { error: e.message };
       }
+    }, url);
 
-      return {
-        brand_name_raw:   brandEl?.textContent?.trim() || '',
-        product_name_raw: nameEl?.textContent?.trim() || '',
-        sale_price_raw:   salePriceEl?.textContent?.trim() || '',
-        list_price_raw:   listPriceEl?.textContent?.trim() || '',
-        product_url:      linkEl?.href || '',
-        badges:           badgeTexts.join(','),
-        is_sold_out:      !!soldOutEl,
-        has_newOyflag:    !!item.querySelector('.newOyflag'),
-      };
-    });
-  });
+    if (!result.error && result.count > 0) return result.items;
+
+    const is429 = result.status === 429;
+    if (result.error) {
+      console.log(`  ⚠️  fetch 실패: ${result.error}`);
+    } else {
+      console.log(`  ⚠️  빈 목록 응답(status=${result.status}, 레이트리밋 추정)`);
+    }
+    if (attempt < retries) {
+      // 429(레이트리밋)는 더 넉넉히 백오프: 10초 → 20초 → 30초 / 그 외: 4초 → 8초
+      const wait = is429 ? attempt * 10000 : attempt * 4000;
+      console.log(`  ${wait / 1000}초 후 재시도 (${attempt}/${retries})`);
+      await page.waitForTimeout(wait);
+    }
+  }
+  return [];
 }
 
 // 단일 카테고리 수집
@@ -122,9 +152,7 @@ async function scrapeCategory(page, category, runId, snapshotDate, collectedAt, 
     // 한 페이지에 전부 있는 경우 (바디케어 등)
     const url = `${baseUrl}?${params}`;
     console.log(`  페이지 1/1 수집 중...`);
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(1500);
-    const items = await extractProducts(page);
+    const items = await fetchProducts(page, url);
     allRaw.push(...items);
   } else {
     // 여러 페이지를 순회하는 경우 (스킨케어 등)
@@ -132,14 +160,17 @@ async function scrapeCategory(page, category, runId, snapshotDate, collectedAt, 
     for (let pageIdx = 1; pageIdx <= totalPages; pageIdx++) {
       const url = `${baseUrl}?${params}&pageIdx=${pageIdx}`;
       console.log(`  페이지 ${pageIdx}/${totalPages} 수집 중...`);
-      await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
-      await page.waitForTimeout(1500);
-      const items = await extractProducts(page);
+      const items = await fetchProducts(page, url);
       if (items.length === 0) break;
       allRaw.push(...items);
       if (allRaw.length >= TARGET_COUNT) break;
+      // 페이지 간 페이싱 — fetch는 goto보다 빨라 요청이 몰리므로 의도적으로 간격을 둠
+      await page.waitForTimeout(1500);
     }
   }
+
+  // 카테고리 간 페이싱 — 다음 요청 전 잠시 대기해 레이트리밋 회피
+  await page.waitForTimeout(3000);
 
   // 순위 부여 + 데이터 가공
   const products = allRaw
