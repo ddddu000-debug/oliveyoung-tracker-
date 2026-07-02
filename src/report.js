@@ -244,6 +244,33 @@ function buildHtml(D) {
   });
   const kwLatestMonth = kwMonths[kwMonths.length - 1] || '';
 
+  // ── 이벤트 이력: 상품명/배지에서 행사·프로모션 감지 → 유형별 × 날짜별 정리 ──
+  const EVENT_DEFS = [
+    { key:'otuk',    icon:'🔥', label:'오특 (오늘의 특가)', test:(n,b,o)=> o===true||o==='true'||b.includes('오특') },
+    { key:'olyoung', icon:'⭐', label:'올영픽',            test:(n)=> /올영픽/.test(n) },
+    { key:'collab',  icon:'🤝', label:'콜라보',            test:(n)=> /콜라보|컬래버|collab/i.test(n) },
+    { key:'gift',    icon:'🎁', label:'증정 / 사은품',      test:(n)=> /증정|사은품|기프트|gift/i.test(n) },
+    { key:'limited', icon:'⏳', label:'한정 / 에디션',      test:(n)=> /한정|리미티드|에디션/i.test(n) },
+  ];
+  const eventData = {};            // key -> { date -> [ {cat,brand,product,rank} ] }
+  const eventProductSet = {};      // key -> Set(상품명) 누적 고유 상품 수
+  EVENT_DEFS.forEach(def => { eventData[def.key] = {}; eventProductSet[def.key] = new Set(); });
+  allDates.forEach(d => {
+    categories.forEach(cat => {
+      (byCategDate[cat]?.[d] || []).forEach(p => {
+        const n = p.product_name_raw || '', b = p.badges || '', o = p.has_otuk;
+        EVENT_DEFS.forEach(def => {
+          if (def.test(n, b, o)) {
+            (eventData[def.key][d] = eventData[def.key][d] || []).push(
+              { cat, brand: p.brand_name_raw, product: p.product_name_raw, rank: p.rank });
+            eventProductSet[def.key].add(cat + '|' + p.product_name_raw);
+          }
+        });
+      });
+    });
+  });
+  const EVENT_CAP = 60;  // 날짜·유형당 표시 상한
+
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -272,6 +299,18 @@ header p{font-size:12px;opacity:.8;margin-top:3px;}
 /* TOP10/100 토글: 11위 이후 행은 기본 숨김(전체 탭=TOP10), 개별 카테고리 탭에서만 표시(TOP100) */
 tr.rank-rest{display:none;}
 body.show-rest tr.rank-rest{display:table-row;}
+/* 이벤트 이력 */
+.ev-summary{display:flex;flex-wrap:wrap;gap:10px;}
+.ev-stat{display:inline-flex;align-items:center;gap:6px;background:#f4f6f9;border-radius:20px;
+  padding:7px 14px;font-size:13px;font-weight:600;color:#444;}
+.ev-stat b{color:#40916c;font-weight:800;font-size:15px;}
+.ev-otuk{background:#fff1ec;color:#e65100;}.ev-otuk b{color:#e65100;}
+.ev-olyoung{background:#fff8e1;color:#f9a825;}.ev-olyoung b{color:#f9a825;}
+.ev-collab{background:#f3e5f5;color:#8e24aa;}.ev-collab b{color:#8e24aa;}
+.ev-gift{background:#e8f5e9;color:#2e7d32;}.ev-gift b{color:#2e7d32;}
+.ev-limited{background:#e3f2fd;color:#1565c0;}.ev-limited b{color:#1565c0;}
+.ev-summary-row{cursor:pointer;padding:10px 14px;background:#f8f9fa;border:1px solid #e5e7eb;border-radius:8px;
+  list-style:none;display:flex;justify-content:space-between;align-items:center;font-weight:700;color:#1b4332;}
 /* 키워드 인사이트: 월 선택 바 */
 .kw-month-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border-radius:12px;
   padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:18px;font-weight:700;color:#1b4332;font-size:14px;}
@@ -429,6 +468,7 @@ tr:hover td{background:#f9fdf9;}
   <div class="cat-tabs">
     <button class="cat-tab active" onclick="switchCat('all',this)">📊 전체</button>
     ${categories.map(c => `<button class="cat-tab" onclick="switchCat('${c}',this)">${catLabels[c]||c}</button>`).join('')}
+    <button class="cat-tab" onclick="switchCat('event',this)">🎉 이벤트 이력</button>
     <button class="cat-tab" onclick="switchCat('keyword',this)">🔍 키워드 검색</button>
   </div>
 
@@ -522,6 +562,48 @@ tr:hover td{background:#f9fdf9;}
       </script>
     </div>`;
   }).join('')}
+
+  <!-- 이벤트 이력 -->
+  <div id="event-section" style="display:none;">
+    <div class="card full">
+      <h2>🎉 이벤트 이력 <span style="font-weight:400;font-size:12px;color:#888;">— 행사·프로모션 진행 상품 정리 (상품명·배지 기반 감지)</span></h2>
+      <div class="ev-summary">
+        ${EVENT_DEFS.map(def => `<span class="ev-stat ev-${def.key}">${def.icon} ${def.label} <b>${eventProductSet[def.key].size}</b></span>`).join('')}
+      </div>
+      <p style="font-size:12px;color:#888;margin-top:12px;">숫자 = 수집 시작 이후 해당 이벤트로 등장한 누적 고유 상품 수 · 아래 유형별로 날짜(수집일)별 진행 이력을 확인하세요.</p>
+    </div>
+
+    ${EVENT_DEFS.map(def => {
+      const byDate = eventData[def.key];
+      const dates = Object.keys(byDate).sort().reverse();
+      return `<div class="card full">
+        <h2>${def.icon} ${def.label} <span style="font-weight:400;font-size:12px;color:#888;">누적 ${eventProductSet[def.key].size}개 상품 · ${dates.length}일 진행</span></h2>
+        ${dates.length === 0
+          ? '<p class="no-data">아직 감지된 이력이 없어요.</p>'
+          : dates.map((d,i) => {
+              const items = byDate[d];
+              const shown = items.slice(0, EVENT_CAP);
+              const more  = items.length - shown.length;
+              return `<details style="margin-bottom:8px;" ${i===0?'open':''}>
+                <summary class="ev-summary-row">
+                  <span>📅 ${d}</span>
+                  <span style="font-size:12px;font-weight:400;color:#999;">${items.length}개 상품 ▾</span>
+                </summary>
+                <div class="tbl-wrap" style="margin-top:8px;"><table><thead><tr><th>카테고리</th><th>브랜드</th><th>상품명</th><th>순위</th></tr></thead><tbody>
+                ${shown.map(it => `<tr>
+                  <td style="white-space:nowrap;">${catLabels[it.cat]||it.cat}</td>
+                  <td style="white-space:nowrap;">${it.brand}</td>
+                  <td style="max-width:280px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="${(it.product||'').replace(/"/g,'&quot;')}">${it.product}</td>
+                  <td>${it.rank}위</td>
+                </tr>`).join('')}
+                </tbody></table></div>
+                ${more > 0 ? `<p style="font-size:12px;color:#999;padding:6px 2px;">…외 ${more}개</p>` : ''}
+              </details>`;
+            }).join('')
+        }
+      </div>`;
+    }).join('')}
+  </div>
 
   <!-- 키워드 검색 -->
   <div id="keyword-search-section">
@@ -633,22 +715,25 @@ function switchCat(cat, btn) {
   document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
-  // 키워드 검색 탭 처리
+  // 특수 탭(키워드 검색 / 이벤트 이력) 처리
   const kwSection = document.getElementById('keyword-search-section');
   const kwMonthBar = document.getElementById('kw-month-bar');
+  const eventSection = document.getElementById('event-section');
   const mainCards = ['brand-analysis-card'];
-  if (cat === 'keyword') {
-    kwSection.style.display = 'block';
+  if (cat === 'keyword' || cat === 'event') {
     document.querySelectorAll('[data-cat]').forEach(el => el.style.display = 'none');
     mainCards.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
     if (kwMonthBar) kwMonthBar.style.display = 'none';
     document.body.classList.remove('show-rest');
-    document.getElementById('kw-input').focus();
+    kwSection.style.display    = (cat === 'keyword') ? 'block' : 'none';
+    if (eventSection) eventSection.style.display = (cat === 'event') ? '' : 'none';
+    if (cat === 'keyword') document.getElementById('kw-input').focus();
     return;
   }
 
-  // 일반 탭: 키워드 검색 섹션 숨기기
+  // 일반 탭: 특수 섹션 숨기기
   kwSection.style.display = 'none';
+  if (eventSection) eventSection.style.display = 'none';
   mainCards.forEach(id => { const el=document.getElementById(id); if(el) el.style.display=''; });
   if (kwMonthBar) kwMonthBar.style.display = '';
 
