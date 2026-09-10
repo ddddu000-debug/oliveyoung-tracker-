@@ -1,8 +1,23 @@
 const { fetchAllSnapshots, fetchAllChanges } = require('./database');
 const { makeProductKey, normalizeBrand } = require('./normalizer');
+const { CATEGORIES } = require('./categories');
 const fs   = require('fs');
 const path = require('path');
 require('dotenv').config();
+
+// 카테고리 라벨/표시순서는 categories.js를 단일 출처로 사용한다.
+// (예전엔 이 파일 안에 라벨 맵이 4군데 중복돼 있어 카테고리 추가 시 누락이 발생했음)
+const CAT_ORDER  = CATEGORIES.map(c => c.name);
+const CAT_LABEL  = Object.fromEntries(CATEGORIES.map(c => [c.name, c.label]));
+// 키워드 검색 결과의 카테고리 배지 색상 클래스
+const CAT_TAG_CLASS = {
+  skincare:  'kw-tag-skin',
+  bodycare:  'kw-tag-body',
+  haircare:  'kw-tag-hair',
+  makeup:    'kw-tag-make',
+  maskpack:  'kw-tag-mask',
+  cleansing: 'kw-tag-clean',
+};
 
 async function generateReport() {
   console.log('\n[리포트] 대시보드 생성 중...');
@@ -18,7 +33,7 @@ async function generateReport() {
   // ── 날짜 / 카테고리 목록 ──────────────────────────────────────────
   const allDates    = [...new Set(snaps.map(r => r.snapshot_date))].sort();
   const latestDate  = allDates[allDates.length - 1];
-  const CATEG_ORDER = ['skincare', 'bodycare', 'haircare', 'makeup', 'maskpack'];
+  const CATEG_ORDER = CAT_ORDER;
   const categories  = [...new Set(snaps.map(r => r.category))].sort(
     (a, b) => {
       const ai = CATEG_ORDER.indexOf(a); const bi = CATEG_ORDER.indexOf(b);
@@ -169,7 +184,7 @@ async function generateReport() {
     latestDate,
     allDates,
     categories,
-    catLabels: { skincare: '스킨케어', bodycare: '바디케어', haircare: '헤어케어', makeup: '메이크업', maskpack: '마스크팩' },
+    catLabels: CAT_LABEL,
     byCategDate,
     brandHistory,
     otukDates: Object.fromEntries(
@@ -204,7 +219,8 @@ function buildHtml(D) {
     '제품': ['토너','세럼','앰플','크림','로션','에센스','미스트','오일','스틱','쿠션','파운데이션','틴트',
       '립','마스카라','아이라이너','섀도','블러셔','치크','컨실러','파우더','프라이머','클렌징','폼','스크럽',
       '필링','마스크','팩','패드','샴푸','트리트먼트','컨디셔너','바디워시','바디로션','바디크림','데오드란트',
-      '핸드크림','선크림','선스틱','선세럼','선쿠션','젤','비누','밤','왁스','에어','스프레이'],
+      '핸드크림','선크림','선스틱','선세럼','선쿠션','젤','비누','밤','왁스','에어','스프레이',
+      '클렌저','리무버','버블'],
     '성분': ['PDRN','시카','콜라겐','히알루론산','레티놀','나이아신아마이드','세라마이드','판테놀','어성초',
       '병풀','마데카','펩타이드','비타민','아연','살리실산','스쿠알란','티트리','녹차','프로폴리스','달팽이',
       '감초','알로에','카페인','아데노신','프로바이오','토코페롤','무씨','쌀','복숭아','도라지','캐모마일','centella'],
@@ -448,6 +464,7 @@ tr:hover td{background:#f9fdf9;}
 .kw-tag-hair{background:#fff3e0;color:#e65100;}
 .kw-tag-make{background:#fce4ec;color:#880e4f;}
 .kw-tag-mask{background:#f3e5f5;color:#6a1b9a;}
+.kw-tag-clean{background:#e0f7fa;color:#006064;}
 .kw-empty{color:#bbb;font-size:14px;text-align:center;padding:40px 0;}
 </style>
 </head>
@@ -786,13 +803,7 @@ function renderKeywords(month) {
 (function(){ const sel = document.getElementById('kw-month-sel'); if (sel && sel.value) renderKeywords(sel.value); })();
 
 // ── 키워드 검색 ───────────────────────────────────────────────────
-const KW_CAT_TAG = {
-  skincare: ['kw-tag-skin', '스킨케어'],
-  bodycare: ['kw-tag-body', '바디케어'],
-  haircare: ['kw-tag-hair', '헤어케어'],
-  makeup:   ['kw-tag-make', '메이크업'],
-  maskpack: ['kw-tag-mask', '마스크팩'],
-};
+const KW_CAT_TAG = ${JSON.stringify(Object.fromEntries(D.categories.map(c => [c, [CAT_TAG_CLASS[c] || 'kw-tag-skin', D.catLabels[c] || c]])))};
 
 // 날짜 범위 상태
 let kwDateFrom = '';
@@ -1055,7 +1066,7 @@ refreshBrandList();
 function buildDataHtml(snaps, changes) {
   const allDates   = [...new Set(snaps.map(r => r.snapshot_date))].sort();
   const categories = [...new Set(snaps.map(r => r.category))];
-  const catLabels  = { skincare: '스킨케어', bodycare: '바디케어', haircare: '헤어케어', makeup: '메이크업', maskpack: '마스크팩' };
+  const catLabels  = CAT_LABEL;
   const latestDate = allDates[allDates.length - 1] || '';
 
   const dateOptions    = allDates.map(d => `<option value="${d}">${d}</option>`).join('');
@@ -1147,7 +1158,7 @@ tr:hover td{background:#f9fdf9;}
 <script>
 const SNAPS   = ${JSON.stringify(snaps)};
 const CHANGES = ${JSON.stringify(changes)};
-const CAT_LABELS = { skincare:'스킨케어', bodycare:'바디케어' };
+const CAT_LABELS = ${JSON.stringify(catLabels)};
 
 const SNAP_COLS = [
   {k:'snapshot_date',l:'날짜'},{k:'category',l:'카테고리'},{k:'rank',l:'순위'},

@@ -41,6 +41,15 @@ const CATEGORIES = [
     baseUrl:    'https://www.oliveyoung.co.kr/store/main/getBestList.do',
     params:     'dispCatNo=900000100100001&fltDispCatNo=10000010009&pageIdx=1&rowsPerPage=8',
   },
+  {
+    name:       'cleansing',
+    label:      '클렌징',
+    singlePage: true,
+    // 클렌징 대분류 = fltDispCatNo 10000010010
+    // (하위: 클렌징폼/젤, 오일/밤, 워터/밀크, 필링&스크럽, 티슈/패드, 립&아이리무버, 클렌징 디바이스)
+    baseUrl:    'https://www.oliveyoung.co.kr/store/main/getBestList.do',
+    params:     'dispCatNo=900000100100001&fltDispCatNo=10000010010&pageIdx=1&rowsPerPage=8',
+  },
 ];
 
 module.exports = { CATEGORIES };
