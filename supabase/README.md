@@ -4,6 +4,46 @@ Supabase Security Advisor 의 **`RLS Disabled in Public` (Critical) 3건**을 �
 
 대상: `public.raw_snapshots` · `public.daily_changes` · `public.brand_entries`
 
+> ## ✅ 상태 — 프로덕션 적용 및 검증 완료 (2026-09-14)
+>
+> 아래 "적용 이력" 절에 실측 결과가 있다. **migration 을 다시 실행할 필요 없다.**
+
+---
+
+## 적용 이력
+
+### 2026-09-14 — 프로덕션 적용 완료
+
+| 단계 | 결과 |
+|---|---|
+| 전제조건: `SUPABASE_KEY` → `service_role` 교체 | ✅ 완료 |
+| STEP 2 — `migrations/20260910120000_enable_rls_lockdown.sql` | ✅ **Success** |
+| STEP 3 — `checks/02_post_verify.sql` | ✅ **FAIL 0건** |
+| STEP 4 — Actions `Supabase Keepalive` 수동 실행 | ✅ **Success** |
+| STEP 5 — Actions `올리브영 랭킹 일일 수집` 수동 실행 | ✅ **Success** |
+| STEP 6 — Security Advisor Rerun linter | ✅ **Errors 0 / Warnings 0 / No errors detected** |
+
+검증 쿼리 실측:
+
+| check | 결과 |
+|---|---|
+| `1_RLS_ENABLED` | 3개 테이블 모두 `true` |
+| `2_POLICY_COUNT` | 3개 테이블 모두 `0` — 전체 허용 정책 없음 |
+| `3_GRANT_anon_auth` | anon / authenticated 권한 차단 확인 |
+| `5_ANON_PRIV_SIUD` · `6_AUTHED_PRIV_SIUD` | SELECT/INSERT/UPDATE/DELETE 전부 불가 |
+| `0_SVC_BYPASSRLS` · `4_GRANT_service_role` · `7_SVC_PRIV_SIUD` | service_role 권한 및 BYPASSRLS 정상 |
+
+**Security Advisor 결과**
+
+| 테이블 | 적용 전 | 적용 후 |
+|---|---|---|
+| `public.raw_snapshots` | ❌ RLS Disabled in Public | ✅ 해소 |
+| `public.daily_changes` | ❌ RLS Disabled in Public | ✅ 해소 |
+| `public.brand_entries` | ❌ RLS Disabled in Public | ✅ 해소 |
+
+파이프라인 영향 없음 — Keepalive(읽기 경로)와 일일 수집(수집·DELETE·INSERT·리포트 전 경로)
+모두 실측 성공. 데이터 손실 없음(migration 은 DML 0건).
+
 ---
 
 ## 왜 이 구조인가
@@ -57,6 +97,9 @@ SQL 은 **각 파일에 하나씩만** 존재한다. 같은 SQL 을 두 곳에 �
 ---
 
 ## 적용 절차
+
+> 현재 프로덕션에는 **이미 적용 완료**됐다(위 "적용 이력" 참조).
+> 아래는 새 환경에 재현하거나 롤백 후 재적용할 때의 절차다.
 
 | # | 작업 | 방법 |
 |---|---|---|
