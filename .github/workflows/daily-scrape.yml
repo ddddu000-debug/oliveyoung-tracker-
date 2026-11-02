@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   scrape:
-runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04
     steps:
       # 1. 코드 가져오기
       - name: 코드 체크아웃
