@@ -265,6 +265,11 @@ async function scrapeAll(categories) {
       allProducts.push(...products);
     }
 
+    // 0건이면 '성공'으로 넘어가지 않도록 실패 처리 (차단/페이지 구조 변경 시 조용히 멈추는 것 방지)
+    if (allProducts.length === 0) {
+      throw new Error('모든 카테고리 수집 결과 0건 — 올리브영 차단 또는 페이지 구조 변경 의심');
+    }
+
     console.log(`\n✅ 전체 수집 완료: ${allProducts.length}개 (${categories.length}개 카테고리)`);
     return allProducts;
 

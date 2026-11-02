@@ -7,17 +7,21 @@ on:
     - cron: '0 6 * * 1,4'   # 매주 월·목 UTC 06:00 (KST 15:00) — 최대 간격 ~4일 (< 7일 한도)
   workflow_dispatch:         # 버튼/수동 실행
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   ping:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # ubuntu-latest는 OS가 예고 없이 바뀌어 수집이 멈춘 적이 있음(2026-10) → 버전 고정
     steps:
       - name: 코드 체크아웃
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Node.js 설치
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: 패키지 설치
@@ -30,3 +34,18 @@ jobs:
 
       - name: Supabase 핑
         run: node src/keepalive.js
+
+      # 실패 알림 — 저장소에 이슈를 열어 소유자에게 메일/앱 알림이 가도록 함 (같은 날 중복 생성 방지)
+      - name: 실패 알림 이슈 생성
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TITLE="⚠️ ${{ github.workflow }} 실패 ($(date -u +%Y-%m-%d))"
+          if gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number' | grep -q .; then
+            echo "이미 같은 날짜의 알림 이슈가 있음 — 건너뜀"
+          else
+            gh issue create --title "$TITLE" --body "자동 실행이 실패했습니다. 로그: $RUN_URL"
+          fi
