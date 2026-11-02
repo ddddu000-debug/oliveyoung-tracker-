@@ -18,15 +18,15 @@ permissions:
 jobs:
   reset-seed:
     if: ${{ github.event.inputs.confirm == 'RESET' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # ubuntu-latest는 OS가 예고 없이 바뀌어 수집이 멈춘 적이 있음(2026-10) → 버전 고정
     steps:
       - name: 코드 체크아웃
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Node.js 설치
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: 패키지 설치

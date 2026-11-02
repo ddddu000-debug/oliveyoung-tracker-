@@ -85,10 +85,11 @@ async function run() {
     // 3. 카테고리별로 저장 + 분석
     const allDailyChanges = [];
     const allBrandEntries = [];
+    const emptyCategories = [];
 
     for (const category of CATEGORIES) {
       const catProducts = products.filter(p => p.category === category.name);
-      if (catProducts.length === 0) continue;
+      if (catProducts.length === 0) { emptyCategories.push(category.label); continue; }
 
       log.info(`\n[${category.label}] 처리 중...`);
 
@@ -131,6 +132,11 @@ async function run() {
 
     // 7. HTML 대시보드 생성
     await withRetry(() => generateReport(), 'HTML 대시보드 생성');
+
+    // 일부 카테고리가 비었으면 저장·대시보드 생성은 마친 뒤 실패 코드로 종료 → 워크플로 실패 알림 발송
+    if (emptyCategories.length > 0) {
+      throw new Error(`수집 0건 카테고리: ${emptyCategories.join(', ')} (나머지는 저장·대시보드 반영 완료)`);
+    }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     log.info(`============================`);
