@@ -1,0 +1,22 @@
+name: '[멀티] 임시 시험 실행 (DB 저장 없음)'
+on:
+  push:
+    branches: [claude/multi-platform-tracker]
+permissions:
+  contents: read
+jobs:
+  dry:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: multi
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: multi/package-lock.json
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+      - run: node src/runner.js --platform=musinsa,oy_global --dry-run
