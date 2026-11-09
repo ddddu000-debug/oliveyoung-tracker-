@@ -53,7 +53,7 @@ async function runPlatform(src, runId, snapshotDate, onlyCats) {
             list_price:    i.list_price,
             sale_price:    i.sale_price,
             discount_rate: i.discount_rate,
-            rating:        i.rating,
+            rating:        i.review_count === 0 ? null : i.rating,   // 리뷰 0개면 평점 0 대신 비움
             review_count:  i.review_count,
             badges:        i.badges || [],
             raw:           i.raw,
