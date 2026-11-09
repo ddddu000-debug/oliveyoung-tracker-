@@ -1,4 +1,5 @@
-// 사용법: node src/runner.js [--platform=oy_kr,musinsa] [--category=skincare]
+// 사용법: node src/runner.js [--platform=musinsa,oy_global] [--category=skincare] [--dry-run]
+//   --dry-run: DB 에 쓰지 않고 수집 결과만 출력
 // 플랫폼·카테고리마다 독립 실행: 하나가 실패해도 나머지는 저장된다.
 const SOURCES = require('./sources');
 const { withPage } = require('./lib/browser');
@@ -6,6 +7,7 @@ const { saveSnapshots, upsertProducts, logRun } = require('./lib/db');
 const { kstDate, makeRunId, brandKey } = require('./lib/util');
 
 const MIN_ITEMS = 50;   // 이보다 적으면 partial 로 기록
+const DRY_RUN = process.argv.includes('--dry-run');
 
 function arg(name) {
   const a = process.argv.find(x => x.startsWith(`--${name}=`));
@@ -22,7 +24,7 @@ async function runPlatform(src, runId, snapshotDate, onlyCats) {
     } catch (err) {
       console.error(`[${src.platform}] 페이지 준비 실패: ${err.message}`);
       for (const c of cats) {
-        await logRun({ run_id: runId, platform: src.platform, category: c.category, snapshot_date: snapshotDate,
+        if (!DRY_RUN) await logRun({ run_id: runId, platform: src.platform, category: c.category, snapshot_date: snapshotDate,
           status: 'failed', item_count: 0, error: `prepare: ${err.message}`, started_at: new Date().toISOString() });
         results.push('failed');
       }
@@ -63,10 +65,17 @@ async function runPlatform(src, runId, snapshotDate, onlyCats) {
 
         if (items.length === 0) throw new Error('상품 0개');
 
+        const status = items.length >= MIN_ITEMS ? 'success' : 'partial';
+        if (DRY_RUN) {
+          console.log(`  (dry-run) ${items.length}개, 저장 생략`);
+          items.slice(0, 10).forEach(i => console.log(`  [${i.rank}] ${i.product_id} | ${i.brand_name} | ${String(i.product_name).slice(0, 40)} | ${i.sale_price}/${i.list_price} ${i.currency} | -${Math.round((i.discount_rate || 0) * 100)}% | ★${i.rating} (${i.review_count}) | ${i.badges.join(',')}`));
+          results.push(status);
+          continue;
+        }
+
         await upsertProducts(items);
         await saveSnapshots(items.map(({ product_url, image_url, ...row }) => row));
 
-        const status = items.length >= MIN_ITEMS ? 'success' : 'partial';
         await logRun({ run_id: runId, platform: src.platform, category: cat.category, snapshot_date: snapshotDate,
           status, item_count: items.length, error: null, started_at: startedAt });
         console.log(`  ✅ ${items.length}개 저장 (${status})`);
@@ -75,7 +84,7 @@ async function runPlatform(src, runId, snapshotDate, onlyCats) {
       } catch (err) {
         console.error(`  ❌ 실패: ${err.message}`);
         await page.screenshot({ path: `debug/${src.platform}-${cat.category}.png`, fullPage: true }).catch(() => {});
-        await logRun({ run_id: runId, platform: src.platform, category: cat.category, snapshot_date: snapshotDate,
+        if (!DRY_RUN) await logRun({ run_id: runId, platform: src.platform, category: cat.category, snapshot_date: snapshotDate,
           status: 'failed', item_count: 0, error: err.message, started_at: startedAt });
         results.push('failed');
       }

@@ -54,6 +54,6 @@ order by rank_change desc nulls last limit 10;
 
 ```bash
 cd multi && npm ci && npx playwright install chromium
-node src/discover.js musinsa                          # 구조 확인 (DB 저장 없음)
+node src/runner.js --platform=musinsa --dry-run         # DB 저장 없이 결과만 출력
 node src/runner.js --platform=musinsa --category=skincare
 ```
