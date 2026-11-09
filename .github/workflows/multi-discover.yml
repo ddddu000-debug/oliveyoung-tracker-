@@ -30,6 +30,7 @@ jobs:
           cache-dependency-path: multi/package-lock.json
       - run: npm ci
       - run: npx playwright install chromium --with-deps
+      - run: node src/probe.js ${{ matrix.platform }}
       - run: node src/discover.js ${{ matrix.platform }}
       - uses: actions/upload-artifact@v4
         if: always()
