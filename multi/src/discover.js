@@ -33,6 +33,17 @@ async function main() {
       }
     }
 
+    // artifact 를 못 받는 환경을 위해 로그에도 구조를 남긴다
+    const shape = (v, d = 0) => Array.isArray(v) ? `[${v.length}]${v.length && d < 3 ? ' of ' + shape(v[0], d + 1) : ''}`
+      : v && typeof v === 'object' ? (d < 3 ? `{${Object.keys(v).slice(0, 40).map(k => `${k}:${shape(v[k], d + 1)}`).join(', ')}}` : '{…}')
+      : typeof v;
+    for (const r of captured) {
+      if (!findProductArrays(r.body).length) continue;
+      console.log(`\n=== ${r.url}\nSHAPE ${shape(r.body).slice(0, 3000)}`);
+      for (const a of findProductArrays(r.body).slice(0, 2)) console.log(`SAMPLE ${a.path}: ${JSON.stringify(a.items[0]).slice(0, 2500)}`);
+    }
+    console.log(`\nTABS ${JSON.stringify(tabs).slice(0, 3000)}`);
+
     const responses = captured.map(r => ({
       url: r.url,
       status: r.status,
