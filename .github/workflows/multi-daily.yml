@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   scrape:
@@ -61,3 +62,22 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+
+  # 수집 job 이 하나라도 실패하면 바로 알림 이슈 (같은 날 중복 생성 방지)
+  alert:
+    needs: [scrape, sync-oy-kr]
+    if: failure()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 실패 알림 이슈 생성
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TITLE="⚠️ [멀티] 랭킹 일일 수집 실패 ($(TZ=Asia/Seoul date +%Y-%m-%d))"
+          if gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number' | grep -q .; then
+            echo "이미 같은 날짜의 알림 이슈가 있음 — 건너뜀"
+          else
+            gh issue create --title "$TITLE" --body "자동 수집이 실패했습니다. 로그: $RUN_URL" --assignee jeewooleebay0415
+          fi
