@@ -1,0 +1,32 @@
+name: '[멀티] 국내 올리브영 과거 데이터 복사 (1회성)'
+
+# 기존 raw_snapshots 를 읽기만 해서 rk_snapshots 로 복사한다.
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: '시작 날짜 (YYYY-MM-DD)'
+        required: true
+        default: '2026-07-01'
+
+permissions:
+  contents: read
+
+jobs:
+  backfill:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: multi
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: multi/package-lock.json
+      - run: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci
+      - run: node src/backfill-oy-kr.js --from=${{ inputs.from }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}

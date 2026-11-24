@@ -1,0 +1,63 @@
+name: '[멀티] 무신사·올영 글로벌 랭킹 일일 수집'
+
+# 기존 '올리브영 랭킹 일일 수집'과 별개 워크플로우. multi/ 폴더만 사용하고 rk_ 테이블에만 쓴다.
+on:
+  schedule:
+    - cron: '30 1 * * *'   # KST 10:30 — 기존 수집(09:00)이 끝난 뒤 실행
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scrape:
+    timeout-minutes: 30
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false        # 한 플랫폼이 실패해도 나머지는 계속
+      matrix:
+        platform: [musinsa, oy_global]
+    defaults:
+      run:
+        working-directory: multi
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: multi/package-lock.json
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+      - name: 수집
+        run: node src/runner.js --platform=${{ matrix.platform }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      - name: 실패 시 스크린샷 저장
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: multi-debug-${{ matrix.platform }}
+          path: multi/debug/
+          retention-days: 7
+
+  # 국내 올리브영은 다시 긁지 않고, 기존 트래커가 매일 쌓는 raw_snapshots 최근 3일을 rk_snapshots 로 복사
+  sync-oy-kr:
+    timeout-minutes: 15
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: multi
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: multi/package-lock.json
+      - run: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci
+      - run: node src/backfill-oy-kr.js --days=3
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
