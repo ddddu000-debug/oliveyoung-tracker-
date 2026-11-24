@@ -1,0 +1,47 @@
+name: '[멀티] 매일 아침 수집 점검'
+
+# 어제 데이터가 무신사·올영 글로벌(전날)·국내 올영(그저께) 카테고리별로 쌓였는지 확인.
+# 문제가 있으면 이슈를 열고 담당자를 지정해 GitHub 알림 메일이 가게 한다.
+on:
+  schedule:
+    - cron: '0 23 * * *'   # KST 08:00 (GitHub 지연으로 늦어질 수 있음)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: multi
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: multi/package-lock.json
+      - run: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci
+      - name: 점검
+        run: node src/healthcheck.js
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      - name: 문제 알림 이슈 생성
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TITLE="⚠️ [멀티] 랭킹 수집 점검 실패 ($(TZ=Asia/Seoul date +%Y-%m-%d))"
+          { echo "매일 아침 점검에서 문제가 발견됐습니다."; echo; cat healthcheck-problems.txt 2>/dev/null || echo "- 점검 스크립트 자체가 실패했습니다."; echo; echo "로그: $RUN_URL"; } > body.md
+          if gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number' | grep -q .; then
+            echo "이미 같은 날짜의 알림 이슈가 있음 — 건너뜀"
+          else
+            gh issue create --title "$TITLE" --body-file body.md --assignee jeewooleebay0415
+          fi
