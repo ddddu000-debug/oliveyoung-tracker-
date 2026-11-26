@@ -24,7 +24,7 @@
 
 ## 대시보드 페이지
 
-매일 수집이 끝나면 `src/report.js`가 `rk_snapshots`를 읽어 플랫폼별 정적 페이지를 만들고,
+매일 수집(KST 9시 예약 실행, 빠진 날은 15:00 대체 실행)이 끝나면 `src/report.js`가 `rk_snapshots`를 읽어 플랫폼별 정적 페이지를 만들고,
 기존 국내 대시보드와 같은 GitHub Pages 사이트에 올린다(`keep_files`로 국내 페이지는 유지).
 
 | 페이지 | 내용 |

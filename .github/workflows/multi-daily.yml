@@ -100,9 +100,10 @@ jobs:
 
   # 무신사·글로벌 대시보드 페이지(musinsa.html / global.html) 생성 → 기존 GitHub Pages 사이트에 추가
   # 한 플랫폼 수집이 실패해도 쌓여 있는 데이터로 페이지는 갱신한다.
+  # 9시 실행(또는 오후 대체 실행)이 실제로 수집했을 때만 돈다 — guard 가 건너뛴 날은 페이지도 그대로.
   pages:
-    needs: [scrape]
-    if: ${{ !cancelled() }}
+    needs: [guard, scrape]
+    if: ${{ !cancelled() && needs.guard.outputs.run == 'true' }}
     timeout-minutes: 15
     runs-on: ubuntu-24.04
     permissions:
@@ -124,7 +125,21 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       # keep_files: 국내 대시보드(index.html, data.html)는 그대로 두고 두 파일만 추가/교체
+      # 국내 수집도 같은 9시대에 gh-pages 로 배포하므로, 동시에 push 가 겹쳐 거절되면 잠시 후 한 번 더 시도한다.
       - name: GitHub Pages 배포
+        id: deploy
+        continue-on-error: true
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./multi/site
+          publish_branch: gh-pages
+          keep_files: true
+      - name: 배포 재시도 대기
+        if: steps.deploy.outcome == 'failure'
+        run: sleep 60
+      - name: GitHub Pages 배포 (재시도)
+        if: steps.deploy.outcome == 'failure'
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
