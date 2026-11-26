@@ -286,6 +286,56 @@ function buildHtml(D) {
   });
   const EVENT_CAP = 60;  // 날짜·유형당 표시 상한
 
+  // ── 순위 급상승 · 신규 진입/재진입 · 브랜드 점유 카드 (카테고리 탭에서만 표시) ──
+  // 직전 수집일 대비. 상품 식별은 브랜드+상품명 정규화 키(makeProductKey).
+  const escH = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  function insightCards(cat) {
+    const dates = allDates.filter(d => byCategDate[cat]?.[d]?.length);
+    const today = dates[dates.length - 1];
+    const prev  = dates[dates.length - 2];
+    const keyOf = p => makeProductKey(p.brand_name_raw, p.product_name_raw);
+    const prevRank = new Map();
+    (prev ? byCategDate[cat][prev] : []).forEach(p => { const k = keyOf(p); if (!prevRank.has(k)) prevRank.set(k, +p.rank); });
+    const seenBefore = new Set();
+    dates.slice(0, -1).forEach(d => byCategDate[cat][d].forEach(p => seenBefore.add(keyOf(p))));
+    const todayKeys = new Set();
+    const items = (byCategDate[cat][today] || []).map(p => {
+      const k = keyOf(p); todayKeys.add(k);
+      const pr = prevRank.get(k);
+      return { rank: +p.rank, brand: p.brand_name_raw, name: p.product_name_raw,
+        change: pr != null ? pr - +p.rank : null,
+        status: !prev || pr != null ? '' : seenBefore.has(k) ? 'RE' : 'NEW' };
+    });
+    const exits = (prev ? byCategDate[cat][prev] : []).filter(p => !todayKeys.has(keyOf(p)));
+    const risers = items.filter(p => p.change > 0).sort((a, b) => b.change - a.change).slice(0, 10);
+    const newcomers = items.filter(p => p.status).slice(0, 15);
+    const share = {};
+    items.forEach(p => { const k = normalizeBrand(p.brand); if (!k) return; (share[k] ||= { name: p.brand, n: 0, best: p.rank }).n++; });
+    const shares = Object.values(share).sort((a, b) => b.n - a.n || a.best - b.best).slice(0, 10);
+    const tag = p => p.status === 'NEW' ? '<span class="tag t-first">NEW</span>' : '<span class="tag t-other">재진입</span>';
+    const prod = p => `<td class="ins-name" title="${escH(p.name)}"><b>${escH(p.brand)}</b> ${escH(p.name)}</td>`;
+    const exitBrands = [...new Set(exits.map(p => p.brand_name_raw).filter(Boolean))];
+    return `<div class="grid3 ins-grid cat-only" data-cat="${cat}">
+      <div class="card">
+        <h2>🚀 순위 급상승</h2>
+        ${risers.length === 0 ? '<p class="no-data">직전 수집일 대비 상승한 상품이 없어요.</p>' : `<div class="tbl-wrap"><table><thead><tr><th>순위</th><th>변동</th><th>브랜드 · 상품</th></tr></thead><tbody>
+        ${risers.map(p => `<tr><td style="white-space:nowrap;">${p.rank}위</td><td><span class="up">▲${p.change}</span></td>${prod(p)}</tr>`).join('')}
+        </tbody></table></div>`}
+      </div>
+      <div class="card">
+        <h2>✨ 신규 진입 · 재진입</h2>
+        ${newcomers.length === 0 ? '<p class="no-data">오늘 새로 들어온 상품이 없어요.</p>' : `<div class="tbl-wrap"><table><thead><tr><th>순위</th><th></th><th>브랜드 · 상품</th></tr></thead><tbody>
+        ${newcomers.map(p => `<tr><td style="white-space:nowrap;">${p.rank}위</td><td>${tag(p)}</td>${prod(p)}</tr>`).join('')}
+        </tbody></table></div>`}
+        ${exits.length ? `<p style="font-size:12px;color:#999;margin-top:8px;">이탈 ${exits.length}개 · ${exitBrands.slice(0, 6).map(escH).join(', ')}${exitBrands.length > 6 ? ' …' : ''}</p>` : ''}
+      </div>
+      <div class="card">
+        <h2>🏷️ 브랜드 점유 <span style="font-weight:400;font-size:12px;color:#888;">TOP100 내 상품 수</span></h2>
+        ${shares.map(b => `<div class="share-row"><span class="nm" title="${escH(b.name)}">${escH(b.name)}</span><span class="bar"><i style="width:${Math.min(100, b.n / shares[0].n * 100)}%"></i></span><span class="ct">${b.n}개</span></div>`).join('')}
+      </div>
+    </div>`;
+  }
+
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -402,6 +452,14 @@ tr:hover td{background:#f9fdf9;}
 
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .mv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;}
+.ins-grid .tag{white-space:nowrap;}
+.ins-name{max-width:260px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.share-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;}
+.share-row .nm{width:110px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:600;}
+.share-row .bar{flex:1;background:#f0f0f0;border-radius:6px;height:12px;overflow:hidden;}
+.share-row .bar i{display:block;height:100%;background:#40916c;border-radius:6px;}
+.share-row .ct{width:34px;text-align:right;color:#555;}
+@media(max-width:768px){.ins-grid{grid-template-columns:1fr !important;}}
 
 @media(max-width:768px){
   header{padding:12px 14px;}
@@ -532,6 +590,7 @@ tr:hover td{background:#f9fdf9;}
         }).join('')}
         </tbody></table></div>
       </div>
+      ${insightCards(cat)}
     </div>`;
   }).join('')}
 
