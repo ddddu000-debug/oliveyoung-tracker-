@@ -98,9 +98,43 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
 
-  # 수집 job 이 하나라도 실패하면 바로 알림 이슈 (같은 날 중복 생성 방지)
+  # 무신사·글로벌 대시보드 페이지(musinsa.html / global.html) 생성 → 기존 GitHub Pages 사이트에 추가
+  # 한 플랫폼 수집이 실패해도 쌓여 있는 데이터로 페이지는 갱신한다.
+  pages:
+    needs: [scrape]
+    if: ${{ !cancelled() }}
+    timeout-minutes: 15
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: multi
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: multi/package-lock.json
+      - run: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci
+      - name: 대시보드 페이지 생성
+        run: node src/report.js --out=site
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      # keep_files: 국내 대시보드(index.html, data.html)는 그대로 두고 두 파일만 추가/교체
+      - name: GitHub Pages 배포
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./multi/site
+          publish_branch: gh-pages
+          keep_files: true
+
+  # 수집·페이지 job 이 하나라도 실패하면 바로 알림 이슈 (같은 날 중복 생성 방지)
   alert:
-    needs: [scrape, sync-oy-kr]
+    needs: [scrape, sync-oy-kr, pages]
     if: failure()
     runs-on: ubuntu-24.04
     steps:

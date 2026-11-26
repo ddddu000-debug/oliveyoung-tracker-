@@ -6,7 +6,8 @@
   "scripts": {
     "scrape": "node src/runner.js",
     "discover": "node src/discover.js",
-    "backfill:oy-kr": "node src/backfill-oy-kr.js"
+    "backfill:oy-kr": "node src/backfill-oy-kr.js",
+    "report": "node src/report.js --out=site"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.103.0",
