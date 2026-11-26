@@ -104,6 +104,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
           publish_branch: gh-pages
+          keep_files: true   # 무신사·글로벌 페이지(multi-daily가 올림)를 지우지 않도록
 
       # 10. 실패 시 스크린샷 업로드 (디버깅용)
       - name: 실패 시 스크린샷 저장

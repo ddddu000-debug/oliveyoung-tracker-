@@ -474,7 +474,7 @@ tr:hover td{background:#f9fdf9;}
     <h1>🛍️ 올리브영 랭킹 대시보드</h1>
     <p>기준: ${latestDate} &nbsp;|&nbsp; 수집일: ${allDates.length}일 &nbsp;|&nbsp; 카테고리: ${categories.map(c => catLabels[c]||c).join(', ')}</p>
   </div>
-  <a href="data.html" style="padding:7px 16px;border-radius:20px;border:1.5px solid rgba(255,255,255,.6);color:#fff;font-size:12px;text-decoration:none;white-space:nowrap;">📦 Raw 데이터</a>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">${[['musinsa.html','🛒 무신사'],['global.html','🌏 글로벌'],['data.html','📦 Raw 데이터']].map(([h,l]) => `<a href="${h}" style="padding:7px 16px;border-radius:20px;border:1.5px solid rgba(255,255,255,.6);color:#fff;font-size:12px;text-decoration:none;white-space:nowrap;">${l}</a>`).join('')}</div>
 </header>
 
 <div class="wrap">
