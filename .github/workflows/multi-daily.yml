@@ -2,8 +2,7 @@ name: '[멀티] 무신사·올영 글로벌 랭킹 일일 수집'
 
 # 기존 '올리브영 랭킹 일일 수집'과 별개 워크플로우. multi/ 폴더만 사용하고 rk_ 테이블에만 쓴다.
 on:
-  schedule:
-    - cron: '30 1 * * *'   # KST 10:30 — 기존 수집(09:00)이 끝난 뒤 실행
+  # 매일 오전 9시(KST) 실행은 Claude 예약 작업이 workflow_dispatch 로 호출한다 (GitHub schedule 은 지연이 커서 사용 안 함)
   workflow_dispatch:
 
 permissions:
